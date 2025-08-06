@@ -3,20 +3,15 @@ import { Container } from "@/components/container";
 import { useQuery } from "convex/react";
 import { api } from "@SpringEin/backend/convex/_generated/api";
 
-export default function Home() {
+export default function SignIn() {
   const healthCheck = useQuery(api.healthCheck.get);
 
   return (
     <Container>
       <ScrollView className="flex-1 p-6">
-        <View className="">
-          <Text className="text-3xl font-bold text-foreground mb-2">
-            Tab One
-          </Text>
-          <Text className="text-lg text-muted-foreground">
-            Explore the first section of your app
-          </Text>
-        </View>
+        <Text className="text-3xl font-bold text-foreground mb-2">
+          Sign In
+        </Text>
       </ScrollView>
     </Container>
   );

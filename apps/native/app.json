@@ -1,9 +1,9 @@
 {
   "expo": {
-    "name": "my-better-t-app",
-    "slug": "my-better-t-app",
+    "name": "springein",
+    "slug": "springein",
     "version": "1.0.0",
-    "scheme": "my-better-t-app",
+    "scheme": "springein",
     "web": {
       "bundler": "metro",
       "output": "static",
@@ -12,7 +12,8 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true,

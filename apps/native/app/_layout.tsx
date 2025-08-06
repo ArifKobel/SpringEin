@@ -14,7 +14,8 @@ import React, { useRef } from "react";
 import { useColorScheme } from "@/lib/use-color-scheme";
 import { Platform } from "react-native";
 import { setAndroidNavigationBar } from "@/lib/android-navigation-bar";
-
+import { ConvexAuthProvider } from "@convex-dev/auth/react";
+import * as SecureStore from "expo-secure-store"
 const LIGHT_THEME: Theme = {
   ...DefaultTheme,
   colors: NAV_THEME.light,
@@ -23,11 +24,11 @@ const DARK_THEME: Theme = {
   ...DarkTheme,
   colors: NAV_THEME.dark,
 };
-
-export const unstable_settings = {
-  initialRouteName: "(drawer)",
+const secureStorage = {
+  getItem: SecureStore.getItemAsync,
+  setItem: SecureStore.setItemAsync,
+  removeItem: SecureStore.deleteItemAsync,
 };
-
 const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!, {
   unsavedChangesWarning: false,
 });
@@ -54,20 +55,23 @@ export default function RootLayout() {
     return null;
   }
   return (
-    <ConvexProvider client={convex}>
-      <ThemeProvider value={isDarkColorScheme ? DARK_THEME : LIGHT_THEME}>
-        <StatusBar style={isDarkColorScheme ? "light" : "dark"} />
-        <GestureHandlerRootView style={{ flex: 1 }}>
-          <Stack>
-            <Stack.Screen name="(drawer)" options={{ headerShown: false }} />
-            <Stack.Screen
-              name="modal"
-              options={{ title: "Modal", presentation: "modal" }}
-            />
-          </Stack>
-        </GestureHandlerRootView>
-      </ThemeProvider>
-    </ConvexProvider>
+    <ConvexAuthProvider client={convex} storage={secureStorage}>
+      <ConvexProvider client={convex}>
+        <ThemeProvider value={isDarkColorScheme ? DARK_THEME : LIGHT_THEME}>
+          <StatusBar style={isDarkColorScheme ? "light" : "dark"} />
+          <GestureHandlerRootView style={{ flex: 1 }}>
+            <Stack>
+              <Stack.Protected guard={false}>
+                <Stack.Screen name="(drawer)" options={{ headerShown: false }} />
+              </Stack.Protected>
+              <Stack.Protected guard={true}>
+                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+              </Stack.Protected>
+            </Stack>
+          </GestureHandlerRootView>
+        </ThemeProvider>
+      </ConvexProvider>
+    </ConvexAuthProvider>
   );
 }
 

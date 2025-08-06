@@ -1,10 +1,17 @@
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import { Link } from "expo-router";
+import { Link, Redirect } from "expo-router";
 import { Drawer } from "expo-router/drawer";
-
+import { i18n } from "@/i18n";
 import { HeaderButton } from "@/components/header-button";
-
+import { useConvexAuth } from "convex/react";
 const DrawerLayout = () => {
+  const { isLoading, isAuthenticated } = useConvexAuth();
+  if (isLoading) {
+    return null;
+  }
+  if (!isAuthenticated) {
+    return <Redirect href={"/auth"} />;
+  }
   return (
     <Drawer>
       <Drawer.Screen
@@ -18,27 +25,12 @@ const DrawerLayout = () => {
         }}
       />
       <Drawer.Screen
-        name="(tabs)"
+        name="settings"
         options={{
-          headerTitle: "Tabs",
-          drawerLabel: "Tabs",
+          headerTitle: i18n.t('settings.title'),
+          drawerLabel: i18n.t('settings.title'),
           drawerIcon: ({ size, color }) => (
-            <MaterialIcons name="border-bottom" size={size} color={color} />
-          ),
-          headerRight: () => (
-            <Link href="/modal" asChild>
-              <HeaderButton />
-            </Link>
-          ),
-        }}
-      />
-      <Drawer.Screen
-        name="todos"
-        options={{
-          headerTitle: "Todos",
-          drawerLabel: "Todos",
-          drawerIcon: ({ size, color }) => (
-            <Ionicons name="checkbox-outline" size={size} color={color} />
+            <MaterialIcons name="settings" size={size} color={color} />
           ),
         }}
       />
