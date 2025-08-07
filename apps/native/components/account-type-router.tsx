@@ -4,13 +4,17 @@ import { Redirect } from "expo-router";
 import { View, Text } from "react-native";
 import { Container } from "./container";
 
+// Updated router to new roles/profiles model.
+// Redirect priority:
+// - If active role is provider → /(provider)/home
+// - If active role is exchange → /(exchange)/home
+// - Else → /hub to choose or create profiles
 export const AccountTypeRouter = () => {
-  const account = useQuery(api.accounts.getCurrent);
-  const personProfile = useQuery(api.personProfiles.getCurrent);
-  const teamProfile = useQuery(api.teamProfiles.getCurrent);
+  const settings = useQuery(api.profiles.mySettings);
+  const providers = useQuery(api.profiles.myProviderProfiles);
+  const exchanges = useQuery(api.profiles.myExchangeProfiles);
 
-  // Loading state
-  if (account === undefined || personProfile === undefined || teamProfile === undefined) {
+  if (settings === undefined || providers === undefined || exchanges === undefined) {
     return (
       <Container>
         <View className="flex-1 justify-center items-center">
@@ -20,20 +24,12 @@ export const AccountTypeRouter = () => {
     );
   }
 
-  // No account found - redirect to onboarding welcome (only if user came from registration without account type)
-  if (!account) {
-    return <Redirect href="/(onboarding)/welcome" />;
+  if (settings?.activeRole === "provider") {
+    return <Redirect href="/(provider)/home" />;
+  }
+  if (settings?.activeRole === "exchange") {
+    return <Redirect href="/(exchange)/home" />;
   }
 
-  // Account exists but no profile - redirect to profile creation
-  if (account.accountType === "person" && !personProfile) {
-    return <Redirect href="/(onboarding)/person-profile" />;
-  }
-
-  if (account.accountType === "team" && !teamProfile) {
-    return <Redirect href="/(onboarding)/team-profile" />;
-  }
-
-  // Account and profile exist - redirect to main app
-  return <Redirect href="/(drawer)" />;
+  return <Redirect href="/hub" />;
 };

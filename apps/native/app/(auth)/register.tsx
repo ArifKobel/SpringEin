@@ -4,8 +4,6 @@ import { i18n } from "@/i18n";
 import { Link, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { useAuthActions } from "@convex-dev/auth/react";
-import { useMutation } from "convex/react";
-import { api } from "@SpringEin/backend/convex/_generated/api";
 
 export default function Register() {
   const { accountType } = useLocalSearchParams<{ accountType?: "person" | "team" }>();
@@ -16,17 +14,36 @@ export default function Register() {
   const [code, setCode] = useState("");
   const [isButtonLoading, setIsButtonLoading] = useState(false);
   const { signIn } = useAuthActions();
-  const createAccount = useMutation(api.accounts.create);
   const handleSubmit = async () => {
-    if (password !== confirmPassword) {
-      Alert.alert(i18n.t("auth.passwordsDoNotMatch"));
+    if (!email.trim() || !password.trim() || !confirmPassword.trim()) {
+      Alert.alert("Fehler", "Bitte füllen Sie alle Felder aus.");
       return;
     }
-    await signIn("password", {
-      email,
-      password,
-      flow: step,
-    }).then(() => setStep("email-verification"));
+
+    if (password !== confirmPassword) {
+      Alert.alert("Fehler", i18n.t("auth.passwordsDoNotMatch"));
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert("Fehler", "Das Passwort muss mindestens 6 Zeichen lang sein.");
+      return;
+    }
+
+    setIsButtonLoading(true);
+    try {
+      await signIn("password", {
+        email,
+        password,
+        flow: step,
+      });
+      setStep("email-verification");
+    } catch (error) {
+      Alert.alert("Registrierung fehlgeschlagen", "E-Mail ist bereits registriert oder ungültig.");
+      console.error("Registration error:", error);
+    } finally {
+      setIsButtonLoading(false);
+    }
   };
   const onPressVerify = async () => {
     setIsButtonLoading(true);
@@ -37,10 +54,7 @@ export default function Register() {
         flow: step,
       });
 
-      // Create account immediately after successful verification if accountType is provided
-      if (accountType) {
-        await createAccount({ accountType });
-      }
+      // Account-Erstellung wurde entfernt; nur Verifizierung
     } catch (error) {
       console.error("Error during verification:", error);
     }
@@ -49,7 +63,18 @@ export default function Register() {
   return (
     <Container>
       <ScrollView className="flex-1 p-6">
-        <Text className="text-4xl font-bold text-foreground mb-2">{i18n.t("auth.signUp")}</Text>
+        <View className="mb-6">
+          <Text className="text-4xl font-bold text-foreground mb-2">
+            {step === "signUp" ? i18n.t("auth.signUp") : "E-Mail bestätigen"}
+          </Text>
+          <Text className="text-lg text-muted-foreground">
+            {step === "signUp" 
+              ? "Erstellen Sie Ihr neues Konto" 
+              : "Prüfen Sie Ihr E-Mail-Postfach und geben Sie den Code ein"
+            }
+          </Text>
+        </View>
+
         {accountType && (
           <View className="mb-4 p-3 bg-primary/10 rounded-lg">
             <Text className="text-primary font-medium">

@@ -24,6 +24,7 @@
   },
   "packageManager": "npm@10.8.2",
   "dependencies": {
-    "@react-email/render": "^1.2.0"
+    "@react-email/render": "^1.2.0",
+    "@react-native-community/datetimepicker": "^8.4.3"
   }
 }

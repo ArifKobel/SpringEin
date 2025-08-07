@@ -20,9 +20,9 @@ export const ResendOTP = Email({
   async sendVerificationRequest({ identifier: email, provider, token }) {
     const resend = new ResendAPI(provider.apiKey);
     const { error } = await resend.emails.send({
-      from: "My App <onboarding@resend.dev>",
+      from: "SpringEin <onboarding@stayhere.kobel.click>",
       to: [email],
-      subject: `Sign in to My App`,
+      subject: `Sign in to SpringEin`,
       text: "Your code is " + token,
     });
  

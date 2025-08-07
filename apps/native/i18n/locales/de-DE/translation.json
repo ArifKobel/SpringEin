@@ -10,6 +10,8 @@
         "confirmPassword": "Passwort bestätigen",
         "noAccount": "Noch kein Konto? Registrieren",
         "forgotPassword": "Passwort vergessen?",
+        "sendResetEmail": "Passwort-Reset E-Mail senden",
+        "passwordsDoNotMatch": "Passwörter stimmen nicht überein",
         "hasAccount": "Bereits ein Konto? Anmelden",
         "chooseAccountType": "Account-Typ wählen",
         "personAccount": "Person Account",
