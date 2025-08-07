@@ -4,8 +4,9 @@ import { useQuery } from "convex/react";
 import { api } from "@SpringEin/backend/convex/_generated/api";
 import { AccountTypeRouter } from "@/components/account-type-router";
 import { i18n } from "@/i18n";
+import { Ionicons } from "@expo/vector-icons";
 
-export default function Home() {
+export default function Chat() {
   const account = useQuery(api.accounts.getCurrent);
 
   // Show account type router if no account
@@ -20,18 +21,24 @@ export default function Home() {
   return (
     <Container>
       <ScrollView className="flex-1 p-6">
-        <View className="">
+        <View className="mb-6">
           <Text className="text-3xl font-bold text-foreground mb-2">
-            {i18n.t("home.welcome")}
+            {i18n.t("chat.title")}
           </Text>
-          <Text className="text-lg text-muted-foreground mb-4">
-            {i18n.t("home.subtitle")}
+          <Text className="text-lg text-muted-foreground">
+            Ihre Nachrichten und Unterhaltungen
           </Text>
-          <View className="bg-primary/10 p-4 rounded-lg">
-            <Text className="text-primary font-medium">
-              Account Type: {account.accountType === "person" ? i18n.t("auth.personAccount") : i18n.t("auth.teamAccount")}
-            </Text>
-          </View>
+        </View>
+
+        {/* Coming Soon */}
+        <View className="bg-gray-50 rounded-xl p-8 items-center">
+          <Ionicons name="chatbubble-outline" size={64} color="#9ca3af" />
+          <Text className="text-xl font-semibold text-foreground mt-4 text-center">
+            Chat-System kommt bald
+          </Text>
+          <Text className="text-muted-foreground text-center mt-2">
+            Hier können Sie bald direkt mit anderen Nutzern kommunizieren
+          </Text>
         </View>
       </ScrollView>
     </Container>

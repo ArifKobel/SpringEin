@@ -16,6 +16,7 @@ import { Platform } from "react-native";
 import { setAndroidNavigationBar } from "@/lib/android-navigation-bar";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import * as SecureStore from "expo-secure-store"
+import { i18n } from "@/i18n";
 const LIGHT_THEME: Theme = {
   ...DefaultTheme,
   colors: NAV_THEME.light,
@@ -61,12 +62,9 @@ export default function RootLayout() {
           <StatusBar style={isDarkColorScheme ? "light" : "dark"} />
           <GestureHandlerRootView style={{ flex: 1 }}>
             <Stack>
-              <Stack.Protected guard={false}>
                 <Stack.Screen name="(drawer)" options={{ headerShown: false }} />
-              </Stack.Protected>
-              <Stack.Protected guard={true}>
                 <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-              </Stack.Protected>
+                <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
             </Stack>
           </GestureHandlerRootView>
         </ThemeProvider>

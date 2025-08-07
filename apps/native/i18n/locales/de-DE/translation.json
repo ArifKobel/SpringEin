@@ -1,5 +1,69 @@
 {
     "settings": {
         "title": "Einstellungen"
+    },
+    "auth": {
+        "signIn": "Anmelden",
+        "signUp": "Registrieren",
+        "email": "E-Mail",
+        "password": "Passwort",
+        "confirmPassword": "Passwort bestätigen",
+        "noAccount": "Noch kein Konto? Registrieren",
+        "forgotPassword": "Passwort vergessen?",
+        "hasAccount": "Bereits ein Konto? Anmelden",
+        "chooseAccountType": "Account-Typ wählen",
+        "personAccount": "Person Account",
+        "teamAccount": "Team Account",
+        "personDescription": "Ich bin Tagesmutter/Tagesvater und suche Stellenangebote",
+        "teamDescription": "Wir sind eine Tagesstätte und suchen Personal",
+        "continue": "Weiter"
+    },
+    "home": {
+        "welcome": "Willkommen bei SpringEin",
+        "subtitle": "Die Plattform für Tagesbetreuung"
+    },
+    "profile": {
+        "title": "Profil",
+        "createProfile": "Profil erstellen",
+        "editProfile": "Profil bearbeiten",
+        "name": "Name",
+        "bio": "Über mich",
+        "postalCode": "Postleitzahl",
+        "phone": "Telefon",
+        "maxTravelDistance": "Maximale Reiseentfernung (km)",
+        "ageGroups": "Altersgruppen",
+        "sharePhone": "Telefonnummer teilen",
+        "shareEmail": "E-Mail teilen",
+        "facilityName": "Einrichtungsname",
+        "description": "Beschreibung",
+        "address": "Adresse",
+        "contactPersonName": "Ansprechpartner"
+    },
+    "jobs": {
+        "title": "Stellenanzeigen",
+        "createJob": "Stelle ausschreiben",
+        "myJobs": "Meine Anzeigen",
+        "applications": "Bewerbungen",
+        "apply": "Bewerben",
+        "jobTitle": "Stellentitel",
+        "jobDescription": "Stellenbeschreibung",
+        "jobType": "Art der Stelle",
+        "substitute": "Vertretung",
+        "longterm": "Langzeit",
+        "startDate": "Startdatum",
+        "endDate": "Enddatum",
+        "startTime": "Startzeit",
+        "endTime": "Endzeit",
+        "maxPositions": "Maximale Anzahl Stellen"
+    },
+    "chat": {
+        "title": "Nachrichten",
+        "sendMessage": "Nachricht senden",
+        "typeMessage": "Nachricht eingeben..."
+    },
+    "onboarding": {
+        "welcome": "Willkommen!",
+        "subtitle": "Lass uns dein Profil einrichten",
+        "creating": "Account wird erstellt..."
     }
 }

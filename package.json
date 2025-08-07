@@ -14,9 +14,16 @@
     "dev:server": "turbo -F @SpringEin/backend dev",
     "dev:setup": "turbo -F @SpringEin/backend dev:setup"
   },
-  "dependencies": {},
   "devDependencies": {
     "turbo": "^2.5.4"
   },
-  "packageManager": "npm@10.8.2"
+  "pnpm": {
+    "overrides": {
+      "@react-email/render": "1.1.2"
+    }
+  },
+  "packageManager": "npm@10.8.2",
+  "dependencies": {
+    "@react-email/render": "^1.2.0"
+  }
 }

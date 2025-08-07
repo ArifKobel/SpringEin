@@ -1,5 +1,69 @@
 {
     "settings": {
         "title": "Settings"
+    },
+    "auth": {
+        "signIn": "Sign In",
+        "signUp": "Sign Up",
+        "email": "Email",
+        "password": "Password",
+        "confirmPassword": "Confirm Password",
+        "noAccount": "No account? Sign up",
+        "forgotPassword": "Forgot Password?",
+        "hasAccount": "Already have an account? Sign in",
+        "chooseAccountType": "Choose Account Type",
+        "personAccount": "Person Account",
+        "teamAccount": "Team Account",
+        "personDescription": "I am a childcare provider looking for job opportunities",
+        "teamDescription": "We are a daycare facility looking for staff",
+        "continue": "Continue"
+    },
+    "home": {
+        "welcome": "Welcome to SpringEin",
+        "subtitle": "The platform for childcare services"
+    },
+    "profile": {
+        "title": "Profile",
+        "createProfile": "Create Profile",
+        "editProfile": "Edit Profile",
+        "name": "Name",
+        "bio": "About me",
+        "postalCode": "Postal Code",
+        "phone": "Phone",
+        "maxTravelDistance": "Max Travel Distance (km)",
+        "ageGroups": "Age Groups",
+        "sharePhone": "Share Phone Number",
+        "shareEmail": "Share Email",
+        "facilityName": "Facility Name",
+        "description": "Description",
+        "address": "Address",
+        "contactPersonName": "Contact Person"
+    },
+    "jobs": {
+        "title": "Job Postings",
+        "createJob": "Post Job",
+        "myJobs": "My Postings",
+        "applications": "Applications",
+        "apply": "Apply",
+        "jobTitle": "Job Title",
+        "jobDescription": "Job Description",
+        "jobType": "Job Type",
+        "substitute": "Substitute",
+        "longterm": "Long-term",
+        "startDate": "Start Date",
+        "endDate": "End Date",
+        "startTime": "Start Time",
+        "endTime": "End Time",
+        "maxPositions": "Max Positions"
+    },
+    "chat": {
+        "title": "Messages",
+        "sendMessage": "Send Message",
+        "typeMessage": "Type a message..."
+    },
+    "onboarding": {
+        "welcome": "Welcome!",
+        "subtitle": "Let's set up your profile",
+        "creating": "Creating account..."
     }
 }

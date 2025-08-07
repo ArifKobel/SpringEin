@@ -4,17 +4,20 @@ import { authTables } from "@convex-dev/auth/server";
 
 export default defineSchema({
   ...authTables,
-  userSettings: defineTable({
-    userId: v.id("users"),
-    userType: v.union(v.literal("provider"), v.literal("facility")),
+  
+  // Account-Typen: Person oder Team (Tagesstätte)
+  accounts: defineTable({
+    userId: v.string(), // Convex Auth uses string IDs
+    accountType: v.union(v.literal("person"), v.literal("team")),
     isActive: v.boolean(),
     createdAt: v.number(),
     lastActiveAt: v.optional(v.number()),
   }).index("by_userId", ["userId"])
-    .index("by_userType", ["userType"]),
+    .index("by_accountType", ["accountType"]),
 
-  providerProfiles: defineTable({
-    userId: v.id("users"),
+  // Profile für Person-Accounts (Tagesmütter/Väter)
+  personProfiles: defineTable({
+    userId: v.string(), // Convex Auth uses string IDs
     name: v.string(),
     bio: v.optional(v.string()),
     profileImage: v.optional(v.id("_storage")),
@@ -31,8 +34,9 @@ export default defineSchema({
   }).index("by_userId", ["userId"])
     .index("by_postalCode", ["postalCode"]),
 
-  facilityProfiles: defineTable({
-    userId: v.id("users"),
+  // Profile für Team-Accounts (Tagesstätten)
+  teamProfiles: defineTable({
+    userId: v.string(), // Convex Auth uses string IDs
     facilityName: v.string(),
     description: v.optional(v.string()),
     address: v.string(),
@@ -43,8 +47,9 @@ export default defineSchema({
   }).index("by_userId", ["userId"])
     .index("by_postalCode", ["postalCode"]),
 
+  // Verfügbarkeiten für beide Account-Typen
   availabilities: defineTable({
-    userId: v.id("users"),
+    userId: v.string(), // Convex Auth uses string IDs
     type: v.union(v.literal("recurring"), v.literal("oneTime")),
     dayOfWeek: v.optional(v.number()),
     startTime: v.string(),
@@ -55,8 +60,9 @@ export default defineSchema({
     .index("by_type", ["type"])
     .index("by_date", ["date"]),
 
+  // Stellenanzeigen (nur von Team-Accounts erstellt)
   jobPostings: defineTable({
-    facilityId: v.id("users"),
+    teamId: v.string(), // Team-Account der die Anzeige erstellt
     title: v.string(),
     description: v.optional(v.string()),
     type: v.union(v.literal("substitute"), v.literal("longterm")),
@@ -80,14 +86,15 @@ export default defineSchema({
     ),
     createdAt: v.number(),
     expiresAt: v.optional(v.number()),
-  }).index("by_facilityId", ["facilityId"])
+  }).index("by_teamId", ["teamId"])
     .index("by_status", ["status"])
     .index("by_type", ["type"])
     .index("by_startDate", ["startDate"]),
 
+  // Bewerbungen (Person-Accounts bewerben sich bei Team-Accounts)
   applications: defineTable({
     jobPostingId: v.id("jobPostings"),
-    providerId: v.id("users"),
+    personId: v.string(), // Person-Account der sich bewirbt
     message: v.optional(v.string()),
     status: v.union(
       v.literal("pending"), 
@@ -98,22 +105,24 @@ export default defineSchema({
     respondedAt: v.optional(v.number()),
     deleteAt: v.optional(v.number()),
   }).index("by_jobPosting", ["jobPostingId"])
-    .index("by_provider", ["providerId"])
+    .index("by_person", ["personId"])
     .index("by_status", ["status"]),
 
+  // Chats zwischen Person und Team
   chats: defineTable({
-    providerId: v.id("users"),
-    facilityId: v.id("users"),
+    personId: v.string(), // Person-Account
+    teamId: v.string(),   // Team-Account
     createdAt: v.number(),
     lastMessageAt: v.optional(v.number()),
     originApplicationId: v.optional(v.id("applications")),
-  }).index("by_provider", ["providerId"])
-    .index("by_facility", ["facilityId"])
-    .index("by_participants", ["providerId", "facilityId"]),
+  }).index("by_person", ["personId"])
+    .index("by_team", ["teamId"])
+    .index("by_participants", ["personId", "teamId"]),
 
+  // Nachrichten in Chats
   messages: defineTable({
     chatId: v.id("chats"),
-    senderId: v.id("users"),
+    senderId: v.string(), // Convex Auth uses string IDs
     content: v.string(),
     sentAt: v.number(),
     readAt: v.optional(v.number()),
