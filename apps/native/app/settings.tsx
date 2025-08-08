@@ -15,46 +15,26 @@ export default function Settings() {
 
   return (
     <Container>
-      <View style={{ flex: 1, padding: 16 }}>
-        <Text style={{ fontSize: 22, fontWeight: "800", marginBottom: 12 }}>Einstellungen</Text>
-        <Text style={{ fontWeight: "700", marginBottom: 8 }}>Sprache</Text>
-        <View style={{ flexDirection: "row", gap: 8, marginBottom: 16 }}>
-          <Pressable onPress={() => changeLang("de")} style={[styles.chip, lang === "de" && styles.chipActive]}>
-            <Text style={{ color: lang === "de" ? "#fff" : "#111" }}>Deutsch</Text>
+      <View className="flex-1 p-4">
+        <Text className="text-2xl font-extrabold mb-3">Einstellungen</Text>
+        <Text className="font-bold mb-2">Sprache</Text>
+        <View className="flex-row gap-2 mb-4">
+          <Pressable onPress={() => changeLang("de")} className={`px-3 py-2 rounded-full border ${lang === "de" ? "bg-gray-900 border-gray-900" : "border-gray-300"}`}>
+            <Text className={`${lang === "de" ? "text-white" : "text-gray-900"}`}>Deutsch</Text>
           </Pressable>
-          <Pressable onPress={() => changeLang("en")} style={[styles.chip, lang === "en" && styles.chipActive]}>
-            <Text style={{ color: lang === "en" ? "#fff" : "#111" }}>English</Text>
+          <Pressable onPress={() => changeLang("en")} className={`px-3 py-2 rounded-full border ${lang === "en" ? "bg-gray-900 border-gray-900" : "border-gray-300"}`}>
+            <Text className={`${lang === "en" ? "text-white" : "text-gray-900"}`}>English</Text>
           </Pressable>
         </View>
 
-        <Text style={{ fontWeight: "700", marginBottom: 8 }}>Konto</Text>
-        <Pressable onPress={() => signOut()} style={styles.btnDanger}>
-          <Text style={{ color: "white", fontWeight: "700" }}>Abmelden</Text>
+        <Text className="font-bold mb-2">Konto</Text>
+        <Pressable onPress={() => signOut()} className="bg-red-700 py-3 px-3 rounded-lg items-center mt-2">
+          <Text className="text-white font-bold">Abmelden</Text>
         </Pressable>
       </View>
     </Container>
   );
 }
 
-const styles = {
-  chip: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderRadius: 999,
-  },
-  chipActive: {
-    backgroundColor: "#111827",
-    borderColor: "#111827",
-  },
-  btnDanger: {
-    backgroundColor: "#b91c1c",
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 8,
-  },
-} as const;
+ 
 

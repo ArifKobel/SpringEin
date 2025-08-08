@@ -1,4 +1,5 @@
 import { View, Text, ScrollView, Pressable, TextInput, Alert } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { Container } from "@/components/container";
 import { i18n } from "@/i18n";
 import { Link, useLocalSearchParams } from "expo-router";
@@ -84,45 +85,62 @@ export default function Register() {
         )}
         {step === "signUp" ? (
           <>
-        <TextInput
-          placeholder={i18n.t("auth.email")}
-          className="border-2 border-gray-300 rounded-md p-2 py-4 mb-2 mt-5"
-          autoComplete="email"
-          keyboardType="email-address"
-          value={email}
-          onChangeText={setEmail}
-        />
-        <TextInput
-          placeholder={i18n.t("auth.password")}
-          className="border-2 border-gray-300 rounded-md p-2 py-4 mb-2"
-          secureTextEntry
-          autoComplete="password"
-          keyboardType="visible-password"
-          autoCapitalize="none"
-          value={password}
-          onChangeText={setPassword}
-        />
-        <TextInput
-          placeholder={i18n.t("auth.confirmPassword")}
-          className="border-2 border-gray-300 rounded-md p-2 py-4 mb-2"
-          secureTextEntry
-          autoComplete="password"
-          keyboardType="visible-password"
-          autoCapitalize="none"
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-        />
+            <Text className="text-sm font-semibold mb-1 mt-5">E-Mail</Text>
+            <View className="flex-row items-center border-2 border-gray-300 rounded-md px-3 py-3 mb-3 bg-white">
+              <Ionicons name="mail-outline" size={18} color="#6b7280" />
+              <TextInput
+                placeholder={i18n.t("auth.email")}
+                className="ml-2 flex-1"
+                autoComplete="email"
+                keyboardType="email-address"
+                value={email}
+                onChangeText={setEmail}
+              />
+            </View>
+            <Text className="text-sm font-semibold mb-1">Passwort</Text>
+            <View className="flex-row items-center border-2 border-gray-300 rounded-md px-3 py-3 mb-3 bg-white">
+              <Ionicons name="lock-closed-outline" size={18} color="#6b7280" />
+              <TextInput
+                placeholder={i18n.t("auth.password")}
+                className="ml-2 flex-1"
+                secureTextEntry
+                autoComplete="password"
+                keyboardType="visible-password"
+                autoCapitalize="none"
+                value={password}
+                onChangeText={setPassword}
+              />
+            </View>
+            <Text className="text-sm font-semibold mb-1">Passwort bestätigen</Text>
+            <View className="flex-row items-center border-2 border-gray-300 rounded-md px-3 py-3 mb-3 bg-white">
+              <Ionicons name="lock-closed-outline" size={18} color="#6b7280" />
+              <TextInput
+                placeholder={i18n.t("auth.confirmPassword")}
+                className="ml-2 flex-1"
+                secureTextEntry
+                autoComplete="password"
+                keyboardType="visible-password"
+                autoCapitalize="none"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+              />
+            </View>
+            <Text className="text-xs text-gray-500 mb-2">Mindestens 6 Zeichen.</Text>
           </>
         ):(
           <>
-          <TextInput
-            placeholder={i18n.t("auth.code")}
-            className="border-2 border-gray-300 rounded-md p-2 py-4 mb-2 mt-5"
-            autoComplete="one-time-code"
-            keyboardType="number-pad"
-            value={code}
-            onChangeText={setCode}
-          />
+            <Text className="text-sm font-semibold mb-1 mt-5">Bestätigungscode</Text>
+            <View className="flex-row items-center border-2 border-gray-300 rounded-md px-3 py-3 mb-3 bg-white">
+              <Ionicons name="key-outline" size={18} color="#6b7280" />
+              <TextInput
+                placeholder={i18n.t("auth.code")}
+                className="ml-2 flex-1"
+                autoComplete="one-time-code"
+                keyboardType="number-pad"
+                value={code}
+                onChangeText={setCode}
+              />
+            </View>
           </>
         )}
         {step === "signUp" && (

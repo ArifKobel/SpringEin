@@ -4,6 +4,7 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "@SpringEin/backend/convex/_generated/api";
 import { Container } from "@/components/container";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
+import { router } from "expo-router";
 
 export default function NewRequest() {
   const exchangeProfiles = useQuery(api.profiles.myExchangeProfiles) ?? [];
@@ -18,6 +19,9 @@ export default function NewRequest() {
   const [notes, setNotes] = useState("");
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
+  const [showFromTimePicker, setShowFromTimePicker] = useState(false);
+  const [showToTimePicker, setShowToTimePicker] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (exchangeProfiles.length && !exchangeProfileId) {
@@ -27,10 +31,14 @@ export default function NewRequest() {
 
   const onSubmit = async () => {
     try {
-      if (!exchangeProfileId || !startDate || !endDate) {
-        Alert.alert("Fehler", "Profil, Start- und Enddatum sind erforderlich");
-        return;
-      }
+      if (!exchangeProfileId) return Alert.alert("Fehler", "Bitte ein Profil auswählen.");
+      if (!startDate || !endDate) return Alert.alert("Fehler", "Start- und Enddatum sind erforderlich.");
+      if (ageGroups.length === 0) return Alert.alert("Fehler", "Bitte mindestens eine Altersgruppe auswählen.");
+      if (endDate < startDate) return Alert.alert("Fehler", "Enddatum darf nicht vor dem Startdatum liegen.");
+      if (!isValidTime(timeFrom) || !isValidTime(timeTo)) return Alert.alert("Fehler", "Bitte gültige Zeiten (HH:MM) angeben.");
+      if (timeFrom >= timeTo) return Alert.alert("Fehler", "Die Zeit 'Von' muss vor 'Bis' liegen.");
+
+      setIsSubmitting(true);
       await create({
         exchangeProfileId: exchangeProfileId as any,
         ageGroups,
@@ -41,8 +49,12 @@ export default function NewRequest() {
         notes,
       });
       Alert.alert("Erfolgreich", "Anfrage erstellt");
+      router.replace("/(exchange)/requests");
     } catch (e) {
       Alert.alert("Fehler", String(e));
+    }
+    finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -62,95 +74,92 @@ export default function NewRequest() {
     if (selected) setEndDate(selected);
   };
 
+  const parseTimeToDate = (t: string): Date => {
+    const [hh = "08", mm = "00"] = t.split(":");
+    const d = new Date();
+    d.setHours(Number(hh));
+    d.setMinutes(Number(mm));
+    d.setSeconds(0);
+    d.setMilliseconds(0);
+    return d;
+  };
+
+  const formatTime = (d: Date) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  const isValidTime = (t: string) => /^\d{2}:\d{2}$/.test(t);
+
+  const onChangeFromTime = (_: DateTimePickerEvent, selected?: Date) => {
+    if (Platform.OS !== "ios") setShowFromTimePicker(false);
+    if (selected) setTimeFrom(formatTime(selected));
+  };
+  const onChangeToTime = (_: DateTimePickerEvent, selected?: Date) => {
+    if (Platform.OS !== "ios") setShowToTimePicker(false);
+    if (selected) setTimeTo(formatTime(selected));
+  };
+
   return (
     <Container>
-      <ScrollView style={{ padding: 16 }}>
-        <Text style={{ fontSize: 22, fontWeight: "700", marginBottom: 12 }}>Vertretung anfragen</Text>
-        <Text style={{ marginBottom: 8 }}>Kindertagesstätte-Profil auswählen</Text>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
-          {exchangeProfiles.map((p) => (
-            <Pressable
-              key={p._id}
-              onPress={() => setExchangeProfileId(p._id)}
-              style={[styles.chip, exchangeProfileId === p._id && styles.chipActive]}
-            >
-              <Text style={{ color: exchangeProfileId === p._id ? "#fff" : "#111" }}>{p.city}</Text>
+      <ScrollView>
+        <View className="p-4">
+          <Text className="text-2xl font-bold mb-3">Vertretung anfragen</Text>
+          <Text className="mb-2">Kindertagesstätte-Profil auswählen</Text>
+          <View className="flex-row flex-wrap gap-2 mb-3">
+            {exchangeProfiles.map((p) => (
+              <Pressable
+                key={p._id}
+                onPress={() => setExchangeProfileId(p._id)}
+                className={`px-3 py-2 rounded-full border ${exchangeProfileId === p._id ? "bg-gray-900 border-gray-900" : "border-gray-300"}`}
+              >
+                <Text className={`${exchangeProfileId === p._id ? "text-white" : "text-gray-900"}`}>{p.facilityName}</Text>
+              </Pressable>
+            ))}
+          </View>
+          <Text className="font-semibold mb-2">Altersgruppen</Text>
+          <View className="flex-row flex-wrap gap-2 mb-3">
+            {AGE_GROUP_PRESETS.map((g) => (
+              <Pressable key={g} onPress={() => setAgeGroups((prev) => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g])} className={`px-3 py-2 rounded-full border ${ageGroups.includes(g) ? "bg-gray-900 border-gray-900" : "border-gray-300"}`}>
+                <Text className={`${ageGroups.includes(g) ? "text-white" : "text-gray-900"}`}>{g}</Text>
+              </Pressable>
+            ))}
+          </View>
+          <Text className="font-semibold mb-2">Zeitraum</Text>
+          <View className="flex-row gap-3 mb-3">
+            <Pressable onPress={() => setShowStartPicker(true)} className="border border-gray-300 rounded-lg p-3 flex-1 justify-center">
+              <Text>Start: {formatDate(startDate)}</Text>
             </Pressable>
-          ))}
-        </View>
-        <Text style={{ fontWeight: "600", marginBottom: 8 }}>Altersgruppen</Text>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
-          {AGE_GROUP_PRESETS.map((g) => (
-            <Pressable key={g} onPress={() => setAgeGroups((prev) => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g])} style={[styles.chip, ageGroups.includes(g) && styles.chipActive]}>
-              <Text style={{ color: ageGroups.includes(g) ? "#fff" : "#111" }}>{g}</Text>
+            <Pressable onPress={() => setShowEndPicker(true)} className="border border-gray-300 rounded-lg p-3 flex-1 justify-center">
+              <Text>Ende: {formatDate(endDate)}</Text>
             </Pressable>
-          ))}
-        </View>
-        <Text style={{ fontWeight: "600", marginBottom: 8 }}>Zeitraum</Text>
-        <View style={{ flexDirection: "row", gap: 12, marginBottom: 12 }}>
-          <Pressable onPress={() => setShowStartPicker(true)} style={[styles.input, { flex: 1, justifyContent: "center" }]}>
-            <Text>Start: {formatDate(startDate)}</Text>
-          </Pressable>
-          <Pressable onPress={() => setShowEndPicker(true)} style={[styles.input, { flex: 1, justifyContent: "center" }]}>
-            <Text>Ende: {formatDate(endDate)}</Text>
-          </Pressable>
-        </View>
+          </View>
         {showStartPicker && (
           <DateTimePicker value={startDate} mode="date" display={Platform.OS === "ios" ? "spinner" : "default"} onChange={onChangeStart} />
         )}
         {showEndPicker && (
           <DateTimePicker value={endDate} mode="date" display={Platform.OS === "ios" ? "spinner" : "default"} onChange={onChangeEnd} />
         )}
-        <View style={{ flexDirection: "row", gap: 12 }}>
-          <TextInput placeholder="Von (HH:MM)" value={timeFrom} onChangeText={setTimeFrom} style={[styles.input, { flex: 1 }]} />
-          <TextInput placeholder="Bis (HH:MM)" value={timeTo} onChangeText={setTimeTo} style={[styles.input, { flex: 1 }]} />
+          <Text className="font-semibold mb-2">Uhrzeit</Text>
+          <View className="flex-row gap-3 mb-3">
+            <Pressable onPress={() => setShowFromTimePicker(true)} className="border border-gray-300 rounded-lg p-3 flex-1 justify-center">
+              <Text>Von: {timeFrom}</Text>
+            </Pressable>
+            <Pressable onPress={() => setShowToTimePicker(true)} className="border border-gray-300 rounded-lg p-3 flex-1 justify-center">
+              <Text>Bis: {timeTo}</Text>
+            </Pressable>
+          </View>
+        {showFromTimePicker && (
+          <DateTimePicker value={parseTimeToDate(timeFrom)} mode="time" display={Platform.OS === "ios" ? "spinner" : "default"} onChange={onChangeFromTime} />
+        )}
+        {showToTimePicker && (
+          <DateTimePicker value={parseTimeToDate(timeTo)} mode="time" display={Platform.OS === "ios" ? "spinner" : "default"} onChange={onChangeToTime} />
+        )}
+          <TextInput placeholder="Notizen" value={notes} onChangeText={setNotes} className="border border-gray-300 rounded-lg p-3 h-24" multiline />
+          <Pressable disabled={isSubmitting} onPress={onSubmit} className={`bg-gray-900 py-3 rounded-lg items-center mt-2 ${isSubmitting ? "opacity-60" : ""}`}>
+            <Text className="text-white font-bold">Senden</Text>
+          </Pressable>
         </View>
-        <TextInput placeholder="Notizen" value={notes} onChangeText={setNotes} style={[styles.input, { height: 100 }]} multiline />
-        <Pressable onPress={onSubmit} style={styles.button}>
-          <Text style={styles.buttonText}>Senden</Text>
-        </Pressable>
       </ScrollView>
     </Container>
   );
 }
 
-const styles = {
-  input: {
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
-  },
-  chip: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderRadius: 999,
-  },
-  chipActive: {
-    backgroundColor: "#111827",
-    borderColor: "#111827",
-  },
-  chip: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderRadius: 999,
-  },
-  chipActive: {
-    backgroundColor: "#111827",
-    borderColor: "#111827",
-  },
-  button: {
-    backgroundColor: "#111827",
-    paddingVertical: 14,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 8,
-  },
-  buttonText: { color: "white", fontWeight: "700" },
-} as const;
+ 
 

@@ -1,4 +1,5 @@
 import { View, Text, ScrollView, Pressable } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "convex/react";
 import { api } from "@SpringEin/backend/convex/_generated/api";
 import { Container } from "@/components/container";
@@ -6,48 +7,63 @@ import { Link } from "expo-router";
 
 export default function MyRequests() {
   const reqs = useQuery(api.requests.myRequests) ?? [];
+  const counts = useQuery(api.requests.applicationCountsForMyRequests) ?? [];
+  const countById = new Map<string, number>(counts.map((c: any) => [c.requestId, c.count]));
   return (
     <Container>
-      <ScrollView style={{ padding: 16 }}>
-        <Text style={{ fontSize: 22, fontWeight: "700", marginBottom: 12 }}>Meine Anfragen</Text>
-        <Text style={{ color: "#6b7280", marginBottom: 16 }}>
-          Übersicht Ihrer Vertretungsanfragen
-        </Text>
-        
-        {reqs.map((r: any) => (
-          <View key={r._id} style={styles.card}>
-            <Text style={styles.title}>
-              {r.startDate} - {r.endDate}
-            </Text>
-            <Text style={{ color: "#6b7280", marginBottom: 4 }}>
-              {r.timeFrom} - {r.timeTo}
-            </Text>
-            <Text style={{ marginBottom: 8 }}>
-              Altersgruppen: {r.ageGroups.join(", ")}
-            </Text>
-            <View style={[styles.statusBadge, getStatusStyle(r.status)]}>
-              <Text style={styles.statusText}>
-                {getStatusLabel(r.status)}
-              </Text>
+      <ScrollView>
+        <View className="p-4">
+          <Text className="text-2xl font-bold mb-3">Meine Anfragen</Text>
+          <Text className="text-gray-500 mb-4">Übersicht Ihrer Vertretungsanfragen</Text>
+
+          {reqs.map((r: any) => (
+            <View key={r._id} className="border border-gray-200 rounded-2xl p-4 mb-4 bg-white">
+              <View className="space-y-2">
+                <View className="flex-row items-center">
+                  <Ionicons name="calendar-outline" size={16} color="#6b7280" />
+                  <Text className="ml-2 font-semibold">{r.startDate} - {r.endDate}</Text>
+                </View>
+                <View className="flex-row items-center">
+                  <Ionicons name="time-outline" size={16} color="#6b7280" />
+                  <Text className="ml-2 text-gray-600">{r.timeFrom} - {r.timeTo}</Text>
+                </View>
+                <View className="flex-row items-center">
+                  <Ionicons name="people-outline" size={16} color="#6b7280" />
+                  <Text className="ml-2">{r.ageGroups.join(", ")}</Text>
+                </View>
+              </View>
+              <View className="mt-3 flex-row items-center justify-between">
+                <View className={`py-1 px-2 rounded-md ${getStatusClass(r.status)}`}>
+                  <Text className="text-white font-semibold text-xs">{getStatusLabel(r.status)}</Text>
+                </View>
+                <View className="flex-row items-center">
+                  <Ionicons name="mail-outline" size={16} color="#6b7280" />
+                  <Text className="ml-2 font-semibold">{countById.get(r._id) ?? 0}</Text>
+                </View>
+              </View>
+              {r.notes && (
+                <Text className="mt-2 italic">"{r.notes}"</Text>
+              )}
+              <View className="mt-3">
+                <Link href={`/(exchange)/requests/${r._id}`}>
+                  <View className="self-start flex-row items-center gap-1">
+                    <Text className="text-blue-600 font-semibold underline">Bewerbungen ansehen</Text>
+                    <Ionicons name="chevron-forward" size={16} color="#2563eb" />
+                  </View>
+                </Link>
+              </View>
             </View>
-            {r.notes && (
-              <Text style={{ marginTop: 8, fontStyle: "italic" }}>
-                "{r.notes}"
-              </Text>
-            )}
-          </View>
-        ))}
-        
-        {!reqs.length && (
-          <View style={styles.emptyState}>
-            <Text style={{ textAlign: "center", color: "#6b7280" }}>
-              Noch keine Anfragen erstellt
-            </Text>
-            <Link href="/(exchange)/requests/new" style={{ marginTop: 12 }}>
-              <Text style={styles.linkText}>Erste Anfrage erstellen</Text>
-            </Link>
-          </View>
-        )}
+          ))}
+
+          {!reqs.length && (
+            <View className="p-8 items-center">
+              <Text className="text-center text-gray-500">Noch keine Anfragen erstellt</Text>
+              <Link href="/(exchange)/requests/new" className="mt-3">
+                <Text className="text-blue-600 font-semibold underline">Erste Anfrage erstellen</Text>
+              </Link>
+            </View>
+          )}
+        </View>
       </ScrollView>
     </Container>
   );
@@ -62,48 +78,14 @@ function getStatusLabel(status: string) {
   }
 }
 
-function getStatusStyle(status: string) {
+function getStatusClass(status: string) {
   switch (status) {
-    case "open": return { backgroundColor: "#fbbf24" };
-    case "fulfilled": return { backgroundColor: "#10b981" };
-    case "cancelled": return { backgroundColor: "#ef4444" };
-    default: return { backgroundColor: "#6b7280" };
+    case "open": return "bg-amber-400";
+    case "fulfilled": return "bg-emerald-500";
+    case "cancelled": return "bg-red-500";
+    default: return "bg-gray-500";
   }
 }
 
-const styles = {
-  card: {
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    backgroundColor: "#ffffff",
-  },
-  title: { 
-    fontSize: 16,
-    fontWeight: "700", 
-    marginBottom: 4,
-  },
-  statusBadge: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 6,
-    alignSelf: "flex-start",
-  },
-  statusText: {
-    color: "#ffffff",
-    fontWeight: "600",
-    fontSize: 12,
-  },
-  emptyState: {
-    padding: 32,
-    alignItems: "center",
-  },
-  linkText: {
-    color: "#2563eb",
-    fontWeight: "600",
-    textDecorationLine: "underline",
-  },
-} as const;
+ 
 

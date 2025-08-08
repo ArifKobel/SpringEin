@@ -30,8 +30,63 @@ export const createSubstitutionRequest = mutation({
       .query("providerProfiles")
       .withIndex("by_city", (q) => q.eq("city", profile.city))
       .collect();
+    const toMinutes = (t: string) => {
+      const [h, m] = t.split(":").map((x) => Number(x));
+      return h * 60 + m;
+    };
+    const reqFrom = toMinutes(args.timeFrom);
+    const reqTo = toMinutes(args.timeTo);
+    const getDayCode = (d: Date) => ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d.getDay()];
+    const enumerateDays = (start: string, end: string): string[] => {
+      const out: string[] = [];
+      const s = new Date(start + "T00:00:00");
+      const e = new Date(end + "T00:00:00");
+      for (let d = new Date(s); d <= e; d.setDate(d.getDate() + 1)) {
+        out.push(getDayCode(d));
+      }
+      return Array.from(new Set(out));
+    };
+    const requestedDays = enumerateDays(args.startDate, args.endDate);
+    const hasTimeOverlap = (p: any) => {
+      const pFrom = toMinutes(p.availableTimeFrom);
+      const pTo = toMinutes(p.availableTimeTo);
+      return reqFrom < pTo && reqTo > pFrom;
+    };
+    const hasDayOverlap = (p: any) => {
+      if (!Array.isArray(p.availableDays) || p.availableDays.length === 0) return true;
+      return p.availableDays.some((d: string) => requestedDays.includes(d));
+    };
+    const haversineKm = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+      const toRad = (x: number) => (x * Math.PI) / 180;
+      const R = 6371; // km
+      const dLat = toRad(lat2 - lat1);
+      const dLon = toRad(lon2 - lon1);
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    };
+    const withinDistance = (p: any) => {
+      if (
+        profile?.latitude != null && profile?.longitude != null &&
+        p.latitude != null && p.longitude != null
+      ) {
+        const dist = haversineKm(profile.latitude, profile.longitude, p.latitude, p.longitude);
+        // p.maxCommuteKm ist verpflichtend im Schema; fallback auf 0 falls undefiniert
+        const maxKm = typeof p.maxCommuteKm === "number" ? p.maxCommuteKm : 0;
+        return dist <= maxKm;
+      }
+      // Wenn keine Geodaten vorhanden sind, lassen wir den Provider (vorerst) zu, um Matching nicht zu blockieren.
+      return true;
+    };
     const candidateProviders = providers.filter((p) =>
-      args.ageGroups.some((ag) => p.ageGroups.includes(ag))
+      p.capacity > 0 &&
+      args.ageGroups.some((ag) => p.ageGroups.includes(ag)) &&
+      hasTimeOverlap(p) &&
+      hasDayOverlap(p) &&
+      withinDistance(p)
     );
     for (const p of candidateProviders) {
       await ctx.db.insert("requestMatches", {
@@ -115,7 +170,15 @@ export const providerInbox = query({
     const enriched = [] as Array<any>;
     for (const m of matches) {
       const req = await ctx.db.get(m.requestId);
-      if (req) enriched.push({ match: m, request: req });
+      if (!req) continue;
+      const exchangeProfile = await ctx.db.get(req.exchangeProfileId);
+      // find own application for this request (if exists)
+      const apps = await ctx.db
+        .query("requestApplications")
+        .withIndex("by_request", (q) => q.eq("requestId", m.requestId))
+        .collect();
+      const myApp = apps.find((a) => a.providerUserId === userId && a.providerProfileId === m.providerProfileId);
+      enriched.push({ match: m, request: req, exchangeProfile: exchangeProfile ?? null, application: myApp ?? null });
     }
     return enriched;
   },
@@ -187,6 +250,48 @@ export const listApplicationsForRequest = query({
       enriched.push({ application: a, providerProfile: prof });
     }
     return enriched;
+  },
+});
+
+// Counts of applications for all of my requests
+export const applicationCountsForMyRequests = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) return [];
+    const myRequests = await ctx.db
+      .query("substitutionRequests")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+    const results: Array<{ requestId: string; count: number }> = [];
+    for (const r of myRequests) {
+      const apps = await ctx.db
+        .query("requestApplications")
+        .withIndex("by_request", (q) => q.eq("requestId", r._id))
+        .collect();
+      results.push({ requestId: r._id, count: apps.length });
+    }
+    return results;
+  },
+});
+
+// Request details for providers incl. exchange profile and my application status
+export const getRequestDetailsForProvider = query({
+  args: { requestId: v.id("substitutionRequests") },
+  handler: async (ctx, { requestId }) => {
+    const request = await ctx.db.get(requestId);
+    if (!request) return null;
+    const exchangeProfile = await ctx.db.get(request.exchangeProfileId);
+    const userId = await auth.getUserId(ctx);
+    let myApplication: any = null;
+    if (userId) {
+      const apps = await ctx.db
+        .query("requestApplications")
+        .withIndex("by_request", (q) => q.eq("requestId", requestId))
+        .collect();
+      myApplication = apps.find((a) => a.providerUserId === userId) ?? null;
+    }
+    return { request, exchangeProfile, myApplication };
   },
 });
 

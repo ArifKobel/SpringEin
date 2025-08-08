@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "springein",
+    "name": "SpringEin",
     "slug": "springein",
     "version": "1.0.0",
     "scheme": "springein",
@@ -33,14 +33,14 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.amanvarshney01.mybettertapp"
+      "bundleIdentifier": "com.springein.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.amanvarshney01.mybettertapp",
+      "package": "com.springein.app",
       "edgeToEdgeEnabled": true
     }
   }

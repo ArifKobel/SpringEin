@@ -2,8 +2,33 @@ import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { auth } from "./auth";
 
+async function geocodeAddress(address: string, city: string, postalCode?: string) {
+  try {
+    const q = [address, postalCode, city].filter(Boolean).join(", ");
+    const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(q)}`;
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent": "SpringEin/1.0 (contact: support@springein.app)",
+      },
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as Array<any>;
+    if (!Array.isArray(data) || data.length === 0) return null;
+    const first = data[0];
+    const lat = parseFloat(first.lat);
+    const lon = parseFloat(first.lon);
+    if (Number.isFinite(lat) && Number.isFinite(lon)) {
+      return { latitude: lat, longitude: lon } as const;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export const createProviderProfile = mutation({
   args: {
+    displayName: v.optional(v.string()),
     address: v.string(),
     city: v.string(),
     postalCode: v.string(),
@@ -30,9 +55,12 @@ export const createProviderProfile = mutation({
       throw new Error("Es ist bereits ein Anbieter-Profil vorhanden.");
     }
     const now = Date.now();
+    const geo = await geocodeAddress(args.address, args.city, args.postalCode);
     const profileId = await ctx.db.insert("providerProfiles", {
       userId,
+      displayName: args.displayName,
       ...args,
+      ...(geo ?? {}),
       createdAt: now,
     });
     return profileId;
@@ -47,12 +75,13 @@ export const createExchangeProfile = mutation({
     postalCode: v.optional(v.string()),
     contactPersonName: v.optional(v.string()),
     phone: v.optional(v.string()),
-    sharePhone: v.optional(v.boolean()),
-    shareEmail: v.optional(v.boolean()),
+    email: v.optional(v.string()),
+    // removed UI toggles for sharing from profile level
     ageGroups: v.optional(v.array(v.string())),
     openingDays: v.optional(v.array(v.string())),
     openingTimeFrom: v.optional(v.string()),
     openingTimeTo: v.optional(v.string()),
+    openingHours: v.optional(v.array(v.object({ day: v.string(), from: v.string(), to: v.string() }))),
     latitude: v.optional(v.float64()),
     longitude: v.optional(v.float64()),
     bio: v.optional(v.string()),
@@ -69,9 +98,11 @@ export const createExchangeProfile = mutation({
       throw new Error("Es ist bereits ein Kindertagesstätte-Profil vorhanden.");
     }
     const now = Date.now();
+    const geo = await geocodeAddress(args.address, args.city, args.postalCode ?? undefined);
     const id = await ctx.db.insert("exchangeProfiles", {
       userId,
       ...args,
+      ...(geo ?? {}),
       createdAt: now,
     });
     return id;
@@ -176,6 +207,7 @@ export const searchProviders = query({
 export const updateProviderProfile = mutation({
   args: {
     profileId: v.id("providerProfiles"),
+    displayName: v.optional(v.string()),
     address: v.string(),
     city: v.string(),
     postalCode: v.string(),
@@ -195,12 +227,14 @@ export const updateProviderProfile = mutation({
     if (!userId) throw new Error("Unauthorized");
     const current = await ctx.db.get(args.profileId);
     if (!current || current.userId !== userId) throw new Error("Not allowed");
+    const geo = await geocodeAddress(args.address, args.city, args.postalCode);
     await ctx.db.patch(args.profileId, {
+      displayName: args.displayName,
       address: args.address,
       city: args.city,
       postalCode: args.postalCode,
-      latitude: args.latitude,
-      longitude: args.longitude,
+      latitude: geo?.latitude ?? args.latitude,
+      longitude: geo?.longitude ?? args.longitude,
       capacity: args.capacity,
       ageGroups: args.ageGroups,
       maxCommuteKm: args.maxCommuteKm,
@@ -223,12 +257,12 @@ export const updateExchangeProfile = mutation({
     postalCode: v.optional(v.string()),
     contactPersonName: v.optional(v.string()),
     phone: v.optional(v.string()),
-    sharePhone: v.optional(v.boolean()),
-    shareEmail: v.optional(v.boolean()),
+    email: v.optional(v.string()),
     ageGroups: v.optional(v.array(v.string())),
     openingDays: v.optional(v.array(v.string())),
     openingTimeFrom: v.optional(v.string()),
     openingTimeTo: v.optional(v.string()),
+    openingHours: v.optional(v.array(v.object({ day: v.string(), from: v.string(), to: v.string() }))),
     latitude: v.optional(v.float64()),
     longitude: v.optional(v.float64()),
     bio: v.optional(v.string()),
@@ -238,6 +272,7 @@ export const updateExchangeProfile = mutation({
     if (!userId) throw new Error("Unauthorized");
     const current = await ctx.db.get(args.profileId);
     if (!current || current.userId !== userId) throw new Error("Not allowed");
+    const geo = await geocodeAddress(args.address, args.city, args.postalCode ?? undefined);
     await ctx.db.patch(args.profileId, {
       facilityName: args.facilityName,
       address: args.address,
@@ -245,14 +280,14 @@ export const updateExchangeProfile = mutation({
       postalCode: args.postalCode,
       contactPersonName: args.contactPersonName,
       phone: args.phone,
-      sharePhone: args.sharePhone,
-      shareEmail: args.shareEmail,
+      email: args.email,
       ageGroups: args.ageGroups,
       openingDays: args.openingDays,
       openingTimeFrom: args.openingTimeFrom,
       openingTimeTo: args.openingTimeTo,
-      latitude: args.latitude,
-      longitude: args.longitude,
+      openingHours: args.openingHours,
+      latitude: geo?.latitude ?? args.latitude,
+      longitude: geo?.longitude ?? args.longitude,
       bio: args.bio,
     });
     return true;

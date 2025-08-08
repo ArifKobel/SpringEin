@@ -1,8 +1,9 @@
-import { View, Text, ScrollView, Pressable, Alert, TextInput } from "react-native";
-import { useMutation, useQuery } from "convex/react";
+import { View, Text, ScrollView, Pressable } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useQuery } from "convex/react";
 import { api } from "@SpringEin/backend/convex/_generated/api";
 import { Container } from "@/components/container";
-import { useState } from "react";
+import { router } from "expo-router";
 
 export default function Inbox() {
   const items = useQuery(api.requests.providerInbox) ?? [];
@@ -11,101 +12,97 @@ export default function Inbox() {
 
   return (
     <Container>
-      <ScrollView style={{ padding: 16 }}>
-        <Text style={{ fontSize: 22, fontWeight: "700", marginBottom: 12 }}>Eingehende Anfragen</Text>
-        {items.map((it: any) => (
-          <View key={it.match._id} style={styles.card}>
-            <Text style={styles.title}>Status: {it.match.status}</Text>
-            <Text>Datum: {it.request.startDate} bis {it.request.endDate}</Text>
-            <Text>Zeit: {it.request.timeFrom} - {it.request.timeTo}</Text>
-            <Text>Altersgruppen: {it.request.ageGroups.join(", ")}</Text>
-            {/* Bewerbung durch Anbieter */}
-            <ApplySection requestId={it.request._id} providerProfileId={it.match.providerProfileId} />
-          </View>
-        ))}
+      <ScrollView>
+        <View className="p-4">
+          <Text className="text-2xl font-bold mb-3">Eingehende Anfragen</Text>
+        {items.map((it: any) => {
+          const hasApplication = Boolean(it.application);
+          const statusLabel = hasApplication
+            ? getAppStatusLabel(it.application.status)
+            : getMatchStatusLabel(it.match.status);
+          const statusStyle = hasApplication
+            ? getStatusStyle(it.application.status)
+            : getStatusStyle(it.match.status);
+
+          return (
+            <View key={it.match._id} className="border border-gray-200 rounded-2xl p-4 mb-4 bg-white">
+              <View className="flex-row items-center justify-between mb-2">
+                <View className="flex-1 pr-3">
+                  {it.exchangeProfile?.facilityName && (
+                    <Text className="font-bold mb-1">{it.exchangeProfile.facilityName}</Text>
+                  )}
+                  <View className="flex-row items-center">
+                    <Ionicons name="calendar-outline" size={16} color="#6b7280" />
+                    <Text className="ml-2 text-gray-500">{it.request.startDate} – {it.request.endDate}</Text>
+                  </View>
+                </View>
+                <View className={`self-start py-1.5 px-2.5 rounded-full ${statusStyle}`}>
+                  <Text className="text-white font-bold">{statusLabel}</Text>
+                </View>
+              </View>
+
+              <View className="space-y-1">
+                <View className="flex-row items-center">
+                  <Ionicons name="time-outline" size={16} color="#6b7280" />
+                  <Text className="ml-2">{it.request.timeFrom} - {it.request.timeTo}</Text>
+                </View>
+                <View className="flex-row items-center">
+                  <Ionicons name="people-outline" size={16} color="#6b7280" />
+                  <Text className="ml-2">{it.request.ageGroups.join(", ")}</Text>
+                </View>
+              </View>
+
+              <View className="flex-row gap-2 mt-3">
+                <Pressable onPress={() => router.push(`/(provider)/requests/${it.request._id}`)} className="bg-gray-200 py-2.5 px-3 rounded-lg">
+                  <Text className="text-gray-900 font-bold">Details</Text>
+                </Pressable>
+              </View>
+
+              {hasApplication && it.application.decisionAt ? (
+                <Text className="mt-2 text-gray-500">Entschieden am: {new Date(it.application.decisionAt).toLocaleDateString()}</Text>
+              ) : null}
+            </View>
+          );
+        })}
         {!items.length && <Text>Keine Anfragen vorhanden.</Text>}
+        </View>
       </ScrollView>
     </Container>
   );
 }
 
-function ApplySection({ requestId, providerProfileId }: { requestId: string; providerProfileId: string }) {
-  const apply = useMutation(api.requests.applyToRequest);
-  const [coverNote, setCoverNote] = useState("");
-  const [sharePhone, setSharePhone] = useState(true);
-  const [shareEmail, setShareEmail] = useState(false);
-  const [initialMessage, setInitialMessage] = useState("");
-
-  const onApply = async () => {
-    try {
-      await apply({ requestId: requestId as any, providerProfileId: providerProfileId as any, coverNote, sharePhone, shareEmail, initialMessage });
-      Alert.alert("Gesendet", "Bewerbung gesendet");
-    } catch (e) {
-      Alert.alert("Fehler", String(e));
-    }
-  };
-
-  return (
-    <View style={{ marginTop: 12 }}>
-      <Text style={styles.title}>Bewerben</Text>
-      <TextInput placeholder="Kurze Notiz" value={coverNote} onChangeText={setCoverNote} style={styles.input} />
-      <View style={{ flexDirection: "row", gap: 8, marginBottom: 8 }}>
-        <Pressable onPress={() => setSharePhone((v) => !v)} style={[styles.chip, sharePhone && styles.chipActive]}>
-          <Text style={{ color: sharePhone ? "#fff" : "#111" }}>Telefon teilen</Text>
-        </Pressable>
-        <Pressable onPress={() => setShareEmail((v) => !v)} style={[styles.chip, shareEmail && styles.chipActive]}>
-          <Text style={{ color: shareEmail ? "#fff" : "#111" }}>E-Mail teilen</Text>
-        </Pressable>
-      </View>
-      <TextInput placeholder="Nachricht" value={initialMessage} onChangeText={setInitialMessage} style={[styles.input, { height: 80 }]} multiline />
-      <Pressable onPress={onApply} style={[styles.btnPrimary, { marginTop: 8 }]}>
-        <Text style={styles.btnText}>Bewerbung senden</Text>
-      </Pressable>
-    </View>
-  );
+function getAppStatusLabel(status: string) {
+  switch (status) {
+    case "applied": return "Beworben";
+    case "accepted": return "Angenommen";
+    case "declined": return "Abgelehnt";
+    default: return status;
+  }
 }
 
-const styles = {
-  card: {
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
-  },
-  title: { fontWeight: "700", marginBottom: 4 },
-  input: {
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 8,
-  },
-  chip: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderRadius: 999,
-  },
-  chipActive: {
-    backgroundColor: "#111827",
-    borderColor: "#111827",
-  },
-  btnPrimary: {
-    backgroundColor: "#111827",
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-  },
-  btnSecondary: {
-    backgroundColor: "#e5e7eb",
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-  },
-  btnText: { color: "white", fontWeight: "700" },
-  btnTextDark: { color: "#111827", fontWeight: "700" },
-} as const;
+function getMatchStatusLabel(status: string) {
+  switch (status) {
+    case "pending": return "Neu";
+    case "accepted": return "Match angenommen";
+    case "declined": return "Match abgelehnt";
+    default: return status;
+  }
+}
+
+function getStatusStyle(status: string) {
+  switch (status) {
+    case "applied":
+    case "pending":
+      return "bg-amber-400";
+    case "accepted":
+      return "bg-emerald-500";
+    case "declined":
+      return "bg-red-500";
+    default:
+      return "bg-gray-500";
+  }
+}
+
+ 
 
 

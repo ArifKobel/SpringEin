@@ -5,13 +5,13 @@ import { Container } from "@/components/container";
 export default function Welcome() {
   return (
     <Container>
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 24 }}>
-        <Text style={{ fontSize: 28, fontWeight: "800", marginBottom: 12 }}>Willkommen bei SpringEin</Text>
-        <Text style={{ fontSize: 16, color: "#6b7280", textAlign: "center", marginBottom: 24 }}>
+      <View className="flex-1 items-center justify-center p-6">
+        <Text className="text-3xl font-extrabold mb-3">Willkommen bei SpringEin</Text>
+        <Text className="text-base text-gray-500 text-center mb-6">
           Starte in 2 Schritten: Rolle wählen und Profil anlegen.
         </Text>
         <Link href="/(onboarding)/role">
-          <Text style={{ color: "#111827", fontWeight: "700" }}>Weiter</Text>
+          <Text className="text-gray-900 font-bold">Weiter</Text>
         </Link>
       </View>
     </Container>

@@ -22,37 +22,18 @@ export default function Role() {
 
   return (
     <Container>
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 24, gap: 12 }}>
-        <Text style={{ fontSize: 22, fontWeight: "800" }}>Wähle deine Rolle</Text>
-        <Pressable onPress={onSelectProvider} style={styles.btnPrimary}>
-          <Text style={styles.btnText}>Ich biete Betreuung an</Text>
+      <View className="flex-1 items-center justify-center p-6 gap-3">
+        <Text className="text-xl font-extrabold">Wähle deine Rolle</Text>
+        <Pressable onPress={onSelectProvider} className="bg-gray-900 py-3 px-4 rounded-xl w-full items-center">
+          <Text className="text-white font-bold">Ich biete Betreuung an</Text>
         </Pressable>
-        <Pressable onPress={onSelectExchange} style={styles.btnSecondary}>
-          <Text style={styles.btnTextDark}>Ich suche Vertretung</Text>
+        <Pressable onPress={onSelectExchange} className="bg-gray-200 py-3 px-4 rounded-xl w-full items-center">
+          <Text className="text-gray-900 font-bold">Ich suche Vertretung</Text>
         </Pressable>
       </View>
     </Container>
   );
 }
 
-const styles = {
-  btnPrimary: {
-    backgroundColor: "#111827",
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    width: "100%",
-    alignItems: "center",
-  },
-  btnSecondary: {
-    backgroundColor: "#e5e7eb",
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    width: "100%",
-    alignItems: "center",
-  },
-  btnText: { color: "white", fontWeight: "700" },
-  btnTextDark: { color: "#111827", fontWeight: "700" },
-} as const;
+ 
 

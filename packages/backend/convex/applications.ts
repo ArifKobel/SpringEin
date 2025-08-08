@@ -16,7 +16,11 @@ export const myApplications = query({
       .collect();
     
     // Sammle alle Bewerbungen für diese Anfragen
-    const allApplications = [];
+    const allApplications: Array<{
+      application: any;
+      request: any;
+      providerProfile: any | null;
+    }> = [];
     for (const req of myRequests) {
       const apps = await ctx.db
         .query("requestApplications")
@@ -65,8 +69,10 @@ export const decideApplication = mutation({
     applicationId: v.id("requestApplications"),
     status: v.string(), // "accepted" | "declined"
     message: v.optional(v.string()),
+    sharePhone: v.optional(v.boolean()),
+    shareEmail: v.optional(v.boolean()),
   },
-  handler: async (ctx, { applicationId, status, message }) => {
+  handler: async (ctx, { applicationId, status, message, sharePhone, shareEmail }) => {
     const app = await ctx.db.get(applicationId);
     if (!app) throw new Error("Bewerbung nicht gefunden");
     
@@ -76,11 +82,20 @@ export const decideApplication = mutation({
       throw new Error("Nicht berechtigt");
     }
     
+    const exchangeProfile = await ctx.db.get(request.exchangeProfileId);
+
     await ctx.db.patch(applicationId, {
       status,
       decisionAt: Date.now(),
-      ...(message && { initialMessage: message }),
+      ...(message && { decisionMessage: message }),
+      ...(sharePhone && exchangeProfile?.phone ? { exchangeSharedPhone: exchangeProfile.phone } : {}),
+      ...(shareEmail && exchangeProfile?.email ? { exchangeSharedEmail: exchangeProfile.email } : {}),
     });
+
+    // Wenn angenommen, Anfrage als erfüllt markieren
+    if (status === "accepted") {
+      await ctx.db.patch(request._id, { status: "fulfilled" });
+    }
     
     return true;
   },

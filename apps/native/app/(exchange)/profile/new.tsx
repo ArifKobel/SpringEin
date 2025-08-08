@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -7,7 +7,7 @@ import {
   Pressable,
   Alert,
 } from "react-native";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@SpringEin/backend/convex/_generated/api";
 import { Container } from "@/components/container";
 import { useMutation as useSetActiveMutation } from "convex/react";
@@ -16,19 +16,27 @@ import { router } from "expo-router";
 export default function NewExchange() {
   const create = useMutation(api.profiles.createExchangeProfile);
   const setActive = useSetActiveMutation(api.profiles.setActiveProfile);
+  const existing = useQuery(api.profiles.myExchangeProfiles) ?? [];
   const [facilityName, setFacilityName] = useState("");
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
   const [postalCode, setPostalCode] = useState("");
   const [contactPersonName, setContactPersonName] = useState("");
   const [phone, setPhone] = useState("");
-  const [sharePhone, setSharePhone] = useState(false);
-  const [shareEmail, setShareEmail] = useState(false);
+  const [email, setEmail] = useState("");
+  // removed share toggles from profile
   const [ageGroups, setAgeGroups] = useState<string[]>([]);
   const [openingDays, setOpeningDays] = useState<string[]>([]);
   const [openingTimeFrom, setOpeningTimeFrom] = useState("08:00");
   const [openingTimeTo, setOpeningTimeTo] = useState("16:00");
+  const [openingHours, setOpeningHours] = useState<{ day: string; from: string; to: string }[]>([]);
   const [bio, setBio] = useState("");
+
+  useEffect(() => {
+    if (existing.length > 0) {
+      router.replace("/(exchange)/profile/edit");
+    }
+  }, [existing.length]);
 
   const onSubmit = async () => {
     try {
@@ -43,12 +51,12 @@ export default function NewExchange() {
         postalCode,
         contactPersonName,
         phone,
-        sharePhone,
-        shareEmail,
+        email,
         ageGroups,
         openingDays,
         openingTimeFrom,
         openingTimeTo,
+        openingHours,
         bio,
       });
       await setActive({ role: "exchange", exchangeProfileId: id as any });
@@ -64,36 +72,42 @@ export default function NewExchange() {
         <Text style={{ fontSize: 22, fontWeight: "700", marginBottom: 12 }}>
           Kindertagesstätte-Profil anlegen
         </Text>
+        <Text style={{ fontWeight: "600", marginBottom: 6 }}>Einrichtungsname</Text>
         <TextInput
           placeholder="Einrichtungsname"
           value={facilityName}
           onChangeText={setFacilityName}
           style={styles.input}
         />
+        <Text style={{ fontWeight: "600", marginBottom: 6 }}>Adresse</Text>
         <TextInput
           placeholder="Adresse"
           value={address}
           onChangeText={setAddress}
           style={styles.input}
         />
+        <Text style={{ fontWeight: "600", marginBottom: 6 }}>Stadt</Text>
         <TextInput
           placeholder="Stadt"
           value={city}
           onChangeText={setCity}
           style={styles.input}
         />
+        <Text style={{ fontWeight: "600", marginBottom: 6 }}>PLZ</Text>
         <TextInput
           placeholder="PLZ"
           value={postalCode}
           onChangeText={setPostalCode}
           style={styles.input}
         />
+        <Text style={{ fontWeight: "600", marginBottom: 6 }}>Ansprechpartner</Text>
         <TextInput
           placeholder="Ansprechpartner"
           value={contactPersonName}
           onChangeText={setContactPersonName}
           style={styles.input}
         />
+        <Text style={{ fontWeight: "600", marginBottom: 6 }}>Telefon</Text>
         <TextInput
           placeholder="Telefon"
           value={phone}
@@ -101,14 +115,16 @@ export default function NewExchange() {
           style={styles.input}
           keyboardType="phone-pad"
         />
-        <View style={{ flexDirection: "row", gap: 12 }}>
-          <Pressable onPress={() => setSharePhone((v) => !v)} style={[styles.chip, sharePhone && styles.chipActive]}>
-            <Text style={{ color: sharePhone ? "#fff" : "#111" }}>Telefon teilen</Text>
-          </Pressable>
-          <Pressable onPress={() => setShareEmail((v) => !v)} style={[styles.chip, shareEmail && styles.chipActive]}>
-            <Text style={{ color: shareEmail ? "#fff" : "#111" }}>E-Mail teilen</Text>
-          </Pressable>
-        </View>
+        <Text style={{ fontWeight: "600", marginBottom: 6 }}>E-Mail</Text>
+        <TextInput
+          placeholder="E-Mail"
+          value={email}
+          onChangeText={setEmail}
+          style={styles.input}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+        {/* Share toggles removed from profile */}
         <Text style={{ fontWeight: "600", marginTop: 12, marginBottom: 8 }}>Altersgruppen</Text>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
           {(["0-2", "3-5", "6-10"] as const).map((g) => (
@@ -129,6 +145,23 @@ export default function NewExchange() {
           <TextInput placeholder="Öffnet (HH:MM)" value={openingTimeFrom} onChangeText={setOpeningTimeFrom} style={[styles.input, { flex: 1 }]} />
           <TextInput placeholder="Schließt (HH:MM)" value={openingTimeTo} onChangeText={setOpeningTimeTo} style={[styles.input, { flex: 1 }]} />
         </View>
+        <Text style={{ fontWeight: "600", marginTop: 12, marginBottom: 8 }}>Öffnungszeiten pro Wochentag (optional)</Text>
+        {(["Mon", "Tue", "Wed", "Thu", "Fri"] as const).map((d) => {
+          const entry = openingHours.find((x) => x.day === d) || { day: d, from: "", to: "" };
+          return (
+            <View key={d} style={{ flexDirection: "row", gap: 8, marginBottom: 8 }}>
+              <View style={[styles.input, { flex: 0.6 }]}><Text>{d}</Text></View>
+              <TextInput placeholder="Von" value={entry.from} onChangeText={(t) => setOpeningHours((prev) => {
+                const others = prev.filter((x) => x.day !== d);
+                return [...others, { ...entry, from: t }];
+              })} style={[styles.input, { flex: 1 }]} />
+              <TextInput placeholder="Bis" value={entry.to} onChangeText={(t) => setOpeningHours((prev) => {
+                const others = prev.filter((x) => x.day !== d);
+                return [...others, { ...entry, to: t }];
+              })} style={[styles.input, { flex: 1 }]} />
+            </View>
+          );
+        })}
         <TextInput
           placeholder="Kurzbeschreibung"
           value={bio}

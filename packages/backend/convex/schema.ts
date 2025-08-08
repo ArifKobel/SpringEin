@@ -6,6 +6,7 @@ export default defineSchema({
   ...authTables,
   providerProfiles: defineTable({
     userId: v.id("users"),
+    displayName: v.optional(v.string()),
     phone: v.optional(v.string()),
     sharePhone: v.optional(v.boolean()),
     shareEmail: v.optional(v.boolean()),
@@ -35,12 +36,14 @@ export default defineSchema({
     postalCode: v.optional(v.string()),
     contactPersonName: v.optional(v.string()),
     phone: v.optional(v.string()),
+    email: v.optional(v.string()),
     sharePhone: v.optional(v.boolean()),
     shareEmail: v.optional(v.boolean()),
     ageGroups: v.optional(v.array(v.string())),
     openingDays: v.optional(v.array(v.string())),
     openingTimeFrom: v.optional(v.string()), // HH:mm
     openingTimeTo: v.optional(v.string()),   // HH:mm
+    openingHours: v.optional(v.array(v.object({ day: v.string(), from: v.string(), to: v.string() }))),
     latitude: v.optional(v.float64()),
     longitude: v.optional(v.float64()),
     bio: v.optional(v.string()),
@@ -95,6 +98,9 @@ export default defineSchema({
     initialMessage: v.optional(v.string()),
     createdAt: v.number(),
     decisionAt: v.optional(v.number()),
+    decisionMessage: v.optional(v.string()),
+    exchangeSharedPhone: v.optional(v.string()),
+    exchangeSharedEmail: v.optional(v.string()),
   })
     .index("by_request", ["requestId"]) // list applications for a request
     .index("by_provider", ["providerUserId"]) // provider's applications

@@ -1,4 +1,5 @@
 import { View, Text, ScrollView, Pressable, TextInput, Alert } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { Container } from "@/components/container";
 import { i18n } from "@/i18n";
 import { Link, router } from "expo-router";
@@ -8,6 +9,7 @@ import { useAuthActions } from "@convex-dev/auth/react";
 export default function SignIn() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { signIn } = useAuthActions();
   
@@ -43,26 +45,37 @@ export default function SignIn() {
             Melden Sie sich mit Ihrem Account an
           </Text>
         </View>
-
-        <TextInput
-          placeholder={i18n.t("auth.email")}
-          className="border-2 border-gray-300 rounded-md p-2 py-4 mb-4"
-          autoComplete="email"
-          keyboardType="email-address"
-          value={email}
-          onChangeText={setEmail}
-          editable={!isLoading}
-        />
-        <TextInput
-          placeholder={i18n.t("auth.password")}
-          className="border-2 border-gray-300 rounded-md p-2 py-4 mb-4"
-          secureTextEntry
-          autoComplete="password"
-          autoCapitalize="none"
-          value={password}
-          onChangeText={setPassword}
-          editable={!isLoading}
-        />
+        <Text className="text-sm font-semibold mb-1">E-Mail</Text>
+        <View className="flex-row items-center border-2 border-gray-300 rounded-md px-3 py-3 mb-3 bg-white">
+          <Ionicons name="mail-outline" size={18} color="#6b7280" />
+          <TextInput
+            placeholder={i18n.t("auth.email")}
+            className="ml-2 flex-1"
+            autoComplete="email"
+            keyboardType="email-address"
+            value={email}
+            onChangeText={setEmail}
+            editable={!isLoading}
+          />
+        </View>
+        <Text className="text-sm font-semibold mb-1">Passwort</Text>
+        <View className="flex-row items-center border-2 border-gray-300 rounded-md px-3 py-3 mb-1 bg-white">
+          <Ionicons name="lock-closed-outline" size={18} color="#6b7280" />
+          <TextInput
+            placeholder={i18n.t("auth.password")}
+            className="ml-2 flex-1"
+            secureTextEntry={!showPassword}
+            autoComplete="password"
+            autoCapitalize="none"
+            value={password}
+            onChangeText={setPassword}
+            editable={!isLoading}
+          />
+          <Pressable onPress={() => setShowPassword((v) => !v)} className="pl-2">
+            <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={18} color="#6b7280" />
+          </Pressable>
+        </View>
+        <Text className="text-xs text-gray-500 mb-4">Mindestens 6 Zeichen.</Text>
         
         <Pressable 
           onPress={handleSubmit} 

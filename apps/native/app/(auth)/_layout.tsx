@@ -10,7 +10,7 @@ const DrawerLayout = () => {
     return null;
   }
   if (isAuthenticated) {
-    return <Redirect href={"/hub"} />;
+    return <Redirect href="/hub" />;
   }
   return (
     <Stack screenOptions={{ headerShown: false }}>

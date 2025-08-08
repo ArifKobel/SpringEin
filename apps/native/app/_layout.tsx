@@ -17,6 +17,7 @@ import { setAndroidNavigationBar } from "@/lib/android-navigation-bar";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import * as SecureStore from "expo-secure-store"
 import { useConvexAuth } from "convex/react";
+import { BrandLogo } from "@/components/header-button";
 const LIGHT_THEME: Theme = {
   ...DefaultTheme,
   colors: NAV_THEME.light,
@@ -66,6 +67,7 @@ export default function RootLayout() {
                 <Stack.Screen name="(exchange)" options={{ headerShown: false }} />
                 <Stack.Screen name="(auth)" options={{ headerShown: false }} />
                 <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
+                <Stack.Screen name="hub" options={{ headerTitle: () => <BrandLogo /> }} />
             </Stack>
           </GestureHandlerRootView>
         </ThemeProvider>

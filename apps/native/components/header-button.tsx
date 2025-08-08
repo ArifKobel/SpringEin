@@ -1,6 +1,6 @@
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { forwardRef } from "react";
-import { Pressable } from "react-native";
+import { Pressable, View, Text } from "react-native";
 
 export const HeaderButton = forwardRef<
   typeof Pressable,
@@ -24,3 +24,23 @@ export const HeaderButton = forwardRef<
     </Pressable>
   );
 });
+
+export function BrandLogo({ size = 20 }: { size?: number }) {
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center" }}>
+      <View
+        style={{
+          width: size + 8,
+          height: size + 8,
+          backgroundColor: "#111827",
+          borderRadius: 8,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Text style={{ color: "white", fontWeight: "900" }}>S</Text>
+      </View>
+      <Text style={{ marginLeft: 8, fontWeight: "800" }}>SpringEin</Text>
+    </View>
+  );
+}

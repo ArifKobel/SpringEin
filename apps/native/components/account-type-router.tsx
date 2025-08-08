@@ -24,10 +24,10 @@ export const AccountTypeRouter = () => {
     );
   }
 
-  if (settings?.activeRole === "provider") {
+  if (settings?.activeRole === "provider" && providers?.length) {
     return <Redirect href="/(provider)/home" />;
   }
-  if (settings?.activeRole === "exchange") {
+  if (settings?.activeRole === "exchange" && exchanges?.length) {
     return <Redirect href="/(exchange)/home" />;
   }
 
