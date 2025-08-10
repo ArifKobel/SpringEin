@@ -1,12 +1,7 @@
 import { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  ScrollView,
-  Pressable,
-  Alert,
-} from "react-native";
+import { View, Text, TextInput, ScrollView, Pressable, Alert } from "react-native";
+import * as Location from "expo-location";
+import { AddressInput, type AddressValue } from "@/components/address-input";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@SpringEin/backend/convex/_generated/api";
 import { Container } from "@/components/container";
@@ -67,6 +62,7 @@ export default function NewExchange() {
   });
   // removed share toggles from profile
   const [openingHours, setOpeningHours] = useState<{ day: string; from: string; to: string }[]>([]);
+  const [addressInfo, setAddressInfo] = useState<AddressValue>({ address: "", city: "", postalCode: "" });
 
   useEffect(() => {
     if (existing.length > 0) {
@@ -76,11 +72,23 @@ export default function NewExchange() {
 
   const onSubmit = async (values: FormValues) => {
     try {
+      let lat = addressInfo.latitude;
+      let lng = addressInfo.longitude;
+      if ((lat == null || lng == null) && values.address) {
+        const r = await Location.geocodeAsync(values.address);
+        if (r[0]) {
+          lat = r[0].latitude;
+          lng = r[0].longitude;
+          setAddressInfo({ ...addressInfo, latitude: lat, longitude: lng });
+        }
+      }
       const id = await create({
         facilityName: values.facilityName,
         address: values.address,
         city: values.city,
         postalCode: values.postalCode,
+        latitude: lat,
+        longitude: lng,
         contactPersonName: values.contactPersonName,
         phone: values.phone,
         email: values.email,
@@ -114,18 +122,26 @@ export default function NewExchange() {
         />
         {errors.facilityName && <Text style={{ color: "#ef4444", marginTop: -8, marginBottom: 8, fontSize: 12 }}>{errors.facilityName.message}</Text>}
         <Text style={{ fontWeight: "600", marginBottom: 6 }}>Adresse</Text>
-        <Controller control={control} name="address" render={({ field: { onChange, onBlur, value } }) => (
-          <TextInput placeholder="Adresse" value={value} onChangeText={onChange} onBlur={onBlur} style={styles.input} />
+        <Controller control={control} name="address" render={({ field: { value } }) => (
+          <AddressInput
+            value={{ address: value, city: getValues('city') || undefined, postalCode: getValues('postalCode') || undefined, latitude: addressInfo.latitude, longitude: addressInfo.longitude }}
+            onChange={(val) => {
+              setAddressInfo(val);
+              setValue('address', val.address, { shouldValidate: true });
+              if (val.city) setValue('city', val.city, { shouldValidate: true });
+              if (val.postalCode) setValue('postalCode', val.postalCode, { shouldValidate: true });
+            }}
+          />  
         )} />
         {errors.address && <Text style={{ color: "#ef4444", marginTop: -8, marginBottom: 8, fontSize: 12 }}>{errors.address.message}</Text>}
         <Text style={{ fontWeight: "600", marginBottom: 6 }}>Stadt</Text>
-        <Controller control={control} name="city" render={({ field: { onChange, onBlur, value } }) => (
-          <TextInput placeholder="Stadt" value={value} onChangeText={onChange} onBlur={onBlur} style={styles.input} />
+        <Controller control={control} name="city" render={({ field: { value } }) => (
+          <TextInput placeholder="Stadt" value={value} editable={false} style={[styles.input, { backgroundColor: '#F9FAFB' }]} />
         )} />
         {errors.city && <Text style={{ color: "#ef4444", marginTop: -8, marginBottom: 8, fontSize: 12 }}>{errors.city.message}</Text>}
         <Text style={{ fontWeight: "600", marginBottom: 6 }}>PLZ</Text>
-        <Controller control={control} name="postalCode" render={({ field: { onChange, onBlur, value } }) => (
-          <TextInput placeholder="PLZ" value={value} onChangeText={onChange} onBlur={onBlur} style={styles.input} />
+        <Controller control={control} name="postalCode" render={({ field: { value } }) => (
+          <TextInput placeholder="PLZ" value={value} editable={false} style={[styles.input, { backgroundColor: '#F9FAFB' }]} />
         )} />
         <Text style={{ fontWeight: "600", marginBottom: 6 }}>Ansprechpartner</Text>
         <Controller control={control} name="contactPersonName" render={({ field: { onChange, onBlur, value } }) => (

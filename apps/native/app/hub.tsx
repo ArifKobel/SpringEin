@@ -17,7 +17,7 @@ export default function Hub() {
   };
   const activateExchange = async (id?: string) => {
     await setActive({ role: "exchange", exchangeProfileId: id as any });
-    router.replace("/(exchange)/home");
+    router.replace("/(exchange)/(tabs)/home");
   };
 
   return (

@@ -55,12 +55,18 @@ export const createProviderProfile = mutation({
       throw new Error("Es ist bereits ein Anbieter-Profil vorhanden.");
     }
     const now = Date.now();
-    const geo = await geocodeAddress(args.address, args.city, args.postalCode);
+    const geo = args.latitude != null && args.longitude != null
+      ? { latitude: args.latitude, longitude: args.longitude }
+      : await geocodeAddress(args.address, args.city, args.postalCode);
+    const latitude = args.latitude ?? geo?.latitude;
+    const longitude = args.longitude ?? geo?.longitude;
+    const { latitude: _la, longitude: _lo, ...rest } = args as any;
     const profileId = await ctx.db.insert("providerProfiles", {
       userId,
       displayName: args.displayName,
-      ...args,
-      ...(geo ?? {}),
+      ...(rest as any),
+      ...(latitude != null ? { latitude } : {}),
+      ...(longitude != null ? { longitude } : {}),
       createdAt: now,
     });
     return profileId;
@@ -98,11 +104,17 @@ export const createExchangeProfile = mutation({
       throw new Error("Es ist bereits ein Kindertagesstätte-Profil vorhanden.");
     }
     const now = Date.now();
-    const geo = await geocodeAddress(args.address, args.city, args.postalCode ?? undefined);
+    const geo = args.latitude != null && args.longitude != null
+      ? { latitude: args.latitude, longitude: args.longitude }
+      : await geocodeAddress(args.address, args.city, args.postalCode ?? undefined);
+    const latitude = args.latitude ?? geo?.latitude;
+    const longitude = args.longitude ?? geo?.longitude;
+    const { latitude: _la, longitude: _lo, ...rest } = args as any;
     const id = await ctx.db.insert("exchangeProfiles", {
       userId,
-      ...args,
-      ...(geo ?? {}),
+      ...(rest as any),
+      ...(latitude != null ? { latitude } : {}),
+      ...(longitude != null ? { longitude } : {}),
       createdAt: now,
     });
     return id;
@@ -227,14 +239,16 @@ export const updateProviderProfile = mutation({
     if (!userId) throw new Error("Unauthorized");
     const current = await ctx.db.get(args.profileId);
     if (!current || current.userId !== userId) throw new Error("Not allowed");
-    const geo = await geocodeAddress(args.address, args.city, args.postalCode);
+    const geo = args.latitude != null && args.longitude != null
+      ? { latitude: args.latitude, longitude: args.longitude }
+      : await geocodeAddress(args.address, args.city, args.postalCode);
     await ctx.db.patch(args.profileId, {
       displayName: args.displayName,
       address: args.address,
       city: args.city,
       postalCode: args.postalCode,
-      latitude: geo?.latitude ?? args.latitude,
-      longitude: geo?.longitude ?? args.longitude,
+      latitude: args.latitude ?? geo?.latitude,
+      longitude: args.longitude ?? geo?.longitude,
       capacity: args.capacity,
       ageGroups: args.ageGroups,
       maxCommuteKm: args.maxCommuteKm,
@@ -272,7 +286,9 @@ export const updateExchangeProfile = mutation({
     if (!userId) throw new Error("Unauthorized");
     const current = await ctx.db.get(args.profileId);
     if (!current || current.userId !== userId) throw new Error("Not allowed");
-    const geo = await geocodeAddress(args.address, args.city, args.postalCode ?? undefined);
+    const geo = args.latitude != null && args.longitude != null
+      ? { latitude: args.latitude, longitude: args.longitude }
+      : await geocodeAddress(args.address, args.city, args.postalCode ?? undefined);
     await ctx.db.patch(args.profileId, {
       facilityName: args.facilityName,
       address: args.address,
@@ -286,8 +302,8 @@ export const updateExchangeProfile = mutation({
       openingTimeFrom: args.openingTimeFrom,
       openingTimeTo: args.openingTimeTo,
       openingHours: args.openingHours,
-      latitude: geo?.latitude ?? args.latitude,
-      longitude: geo?.longitude ?? args.longitude,
+      latitude: args.latitude ?? geo?.latitude,
+      longitude: args.longitude ?? geo?.longitude,
       bio: args.bio,
     });
     return true;

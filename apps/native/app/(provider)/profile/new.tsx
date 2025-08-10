@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { View, Text, TextInput, ScrollView, Pressable, Alert, Platform } from "react-native";
+import * as Location from "expo-location";
+import { AddressInput, type AddressValue } from "@/components/address-input";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import Slider from "@react-native-community/slider";
 import { useMutation, useQuery } from "convex/react";
@@ -69,6 +71,7 @@ export default function NewProvider() {
   });
   const [showFromPicker, setShowFromPicker] = useState(false);
   const [showToPicker, setShowToPicker] = useState(false);
+  const [addressInfo, setAddressInfo] = useState<AddressValue>({ address: "", city: "", postalCode: "" });
 
   useEffect(() => {
     if (existing.length > 0) {
@@ -103,11 +106,23 @@ export default function NewProvider() {
 
   const onSubmit = async (values: FormValues) => {
     try {
+      let lat = addressInfo.latitude;
+      let lng = addressInfo.longitude;
+      if ((lat == null || lng == null) && values.address) {
+        const r = await Location.geocodeAsync(values.address);
+        if (r[0]) {
+          lat = r[0].latitude;
+          lng = r[0].longitude;
+          setAddressInfo({ ...addressInfo, latitude: lat, longitude: lng });
+        }
+      }
       const id = await create({
         displayName: values.displayName,
         address: values.address,
         city: values.city,
         postalCode: values.postalCode ?? "",
+        latitude: lat,
+        longitude: lng,
         capacity: values.capacity,
         ageGroups: values.ageGroups,
         maxCommuteKm: values.maxCommuteKm,
@@ -133,22 +148,30 @@ export default function NewProvider() {
             <TextInput placeholder="Name" value={value} onChangeText={onChange} onBlur={onBlur} className="border border-gray-300 rounded-lg p-3 mb-1" />
           )} />
           <Text className="font-semibold mb-1">Adresse</Text>
-          <Controller control={control} name="address" render={({ field: { onChange, onBlur, value } }) => (
-            <TextInput placeholder="Adresse" value={value} onChangeText={onChange} onBlur={onBlur} className={`border rounded-lg p-3 mb-1 ${errors.address ? 'border-red-400' : 'border-gray-300'}`} />
+          <Controller control={control} name="address" render={({ field: { onChange, value } }) => (
+            <AddressInput
+              value={{ address: value, city: getValues('city') || undefined, postalCode: getValues('postalCode') || undefined, latitude: addressInfo.latitude, longitude: addressInfo.longitude }}
+              onChange={(val) => {
+                setAddressInfo(val);
+                setValue('address', val.address, { shouldValidate: true });
+                if (val.city) setValue('city', val.city, { shouldValidate: true });
+                if (val.postalCode) setValue('postalCode', val.postalCode, { shouldValidate: true });
+              }}
+            />
           )} />
           {errors.address && <Text className="text-red-500 text-xs mb-2">{errors.address.message}</Text>}
           <View className="flex-row gap-3">
             <View className="flex-1">
               <Text className="font-semibold mb-1">Stadt</Text>
-              <Controller control={control} name="city" render={({ field: { onChange, onBlur, value } }) => (
-                <TextInput placeholder="Stadt" value={value} onChangeText={onChange} onBlur={onBlur} className={`border rounded-lg p-3 mb-1 ${errors.city ? 'border-red-400' : 'border-gray-300'}`} />
+              <Controller control={control} name="city" render={({ field: { value } }) => (
+               <TextInput placeholder="Stadt" value={value} editable={false} className={`border rounded-lg p-3 mb-1 ${errors.city ? 'border-red-400' : 'border-gray-300'} bg-gray-50`} />
               )} />
               {errors.city && <Text className="text-red-500 text-xs mb-2">{errors.city.message}</Text>}
             </View>
             <View className="flex-1">
               <Text className="font-semibold mb-1">PLZ</Text>
-              <Controller control={control} name="postalCode" render={({ field: { onChange, onBlur, value } }) => (
-                <TextInput placeholder="PLZ" value={value} onChangeText={onChange} onBlur={onBlur} className="border border-gray-300 rounded-lg p-3 mb-3" />
+              <Controller control={control} name="postalCode" render={({ field: { value } }) => (
+                 <TextInput placeholder="PLZ" value={value} editable={false} className="border border-gray-300 rounded-lg p-3 mb-3 bg-gray-50" />
               )} />
             </View>
           </View>

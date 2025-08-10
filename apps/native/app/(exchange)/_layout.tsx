@@ -13,6 +13,8 @@ export default function ExchangeTabs() {
     <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="profile/edit" options={{ title: "Profil bearbeiten", presentation: "modal" }} />
+        <Stack.Screen name="requests/[id]" options={{ title: "Anfrage", presentation: "modal" }} />
+        <Stack.Screen name="applications/[id]" options={{ title: "Bewerbungsdetails", presentation: "modal" }} />
         <Stack.Screen name="hub" options={{ title: "Profil wechseln", presentation: "modal" }} />
     </Stack>
   );
