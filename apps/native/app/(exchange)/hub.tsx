@@ -1,3 +1,1 @@
-import Hub from "../hub";
-export default Hub;
-
+export { default } from "../hub";

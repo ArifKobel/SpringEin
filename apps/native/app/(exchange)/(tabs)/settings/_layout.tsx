@@ -4,7 +4,6 @@ export default function ExchangeSettingsLayout() {
   return (
     <Stack>
       <Stack.Screen name="index" options={{ title: "Einstellungen" }} />
-      <Stack.Screen name="profile" options={{ title: "Profil bearbeiten" }} />
     </Stack>
   );
 }

@@ -33,7 +33,10 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.springein.app"
+      "bundleIdentifier": "com.springein.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -42,6 +45,12 @@
       },
       "package": "com.springein.app",
       "edgeToEdgeEnabled": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "5498f946-eeee-4fbb-a172-bda28e8efe91"
+      }
     }
   }
 }

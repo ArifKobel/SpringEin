@@ -18,6 +18,7 @@ import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import * as SecureStore from "expo-secure-store"
 import { useConvexAuth } from "convex/react";
 import { BrandLogo } from "@/components/header-button";
+import { KeyboardProvider } from "react-native-keyboard-controller";
 const LIGHT_THEME: Theme = {
   ...DefaultTheme,
   colors: NAV_THEME.light,
@@ -62,13 +63,15 @@ export default function RootLayout() {
         <ThemeProvider value={isDarkColorScheme ? DARK_THEME : LIGHT_THEME}>
           <StatusBar style={isDarkColorScheme ? "light" : "dark"} />
           <GestureHandlerRootView style={{ flex: 1 }}>
-            <Stack>
+            <KeyboardProvider enabled={true}>
+              <Stack>
+                <Stack.Screen name="hub" options={{ headerTitle: () => <BrandLogo /> }} />
                 <Stack.Screen name="(provider)" options={{ headerShown: false }} />
                 <Stack.Screen name="(exchange)" options={{ headerShown: false }} />
                 <Stack.Screen name="(auth)" options={{ headerShown: false }} />
                 <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
-                <Stack.Screen name="hub" options={{ headerTitle: () => <BrandLogo /> }} />
-            </Stack>
+              </Stack>
+            </KeyboardProvider>
           </GestureHandlerRootView>
         </ThemeProvider>
       </ConvexProvider>

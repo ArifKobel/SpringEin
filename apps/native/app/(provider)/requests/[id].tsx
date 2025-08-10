@@ -3,8 +3,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@SpringEin/backend/convex/_generated/api";
 import { Container } from "@/components/container";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, router } from "expo-router";
 import { useMemo, useState } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as yup from "yup";
 
 export default function RequestDetailsForProvider() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -17,12 +20,19 @@ export default function RequestDetailsForProvider() {
   }, [settings, myProviders]);
 
   const apply = useMutation(api.requests.applyToRequest);
-  const [coverNote, setCoverNote] = useState("");
-  const [sharePhone, setSharePhone] = useState(true);
-  const [initialMessage, setInitialMessage] = useState("");
+  type FormValues = { coverNote?: string; sharePhone: boolean; initialMessage?: string };
+  const schema: yup.ObjectSchema<FormValues> = yup.object({
+    coverNote: yup.string().max(200, 'Max. 200 Zeichen').optional(),
+    sharePhone: yup.boolean().required(),
+    initialMessage: yup.string().max(500, 'Max. 500 Zeichen').optional(),
+  });
+  const { control, handleSubmit } = useForm<FormValues>({
+    resolver: yupResolver(schema),
+    defaultValues: { coverNote: '', sharePhone: true, initialMessage: '' },
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const onApply = async () => {
+  const onApply = async ({ coverNote, sharePhone, initialMessage }: FormValues) => {
     try {
       if (!providerProfileId) return Alert.alert("Fehler", "Kein Tagespflegeperson-Profil gefunden.");
       if (!details) return;
@@ -109,14 +119,20 @@ export default function RequestDetailsForProvider() {
           ) : (
             <View className="mb-6 p-5 bg-gray-50 rounded-2xl">
               <Text className="text-base font-bold mb-2 text-gray-900">Bewerben</Text>
-              <TextInput placeholder="Kurze Notiz" value={coverNote} onChangeText={setCoverNote} className="border border-gray-300 rounded-lg p-3 mb-2 bg-white" />
+              <Controller control={control} name="coverNote" render={({ field: { onChange, onBlur, value } }) => (
+                <TextInput placeholder="Kurze Notiz" value={value} onChangeText={onChange} onBlur={onBlur} className="border border-gray-300 rounded-lg p-3 mb-2 bg-white" />
+              )} />
               <View className="flex-row gap-2 mb-2">
-                <Pressable onPress={() => setSharePhone(v => !v)} className={`px-3 py-2 rounded-full border ${sharePhone ? "bg-gray-900 border-gray-900" : "border-gray-300"}`}>
-                  <Text className={`${sharePhone ? "text-white" : "text-gray-900"}`}>Telefon teilen</Text>
-                </Pressable>
+                <Controller control={control} name="sharePhone" render={({ field: { value, onChange } }) => (
+                  <Pressable onPress={() => onChange(!value)} className={`px-3 py-2 rounded-full border ${value ? "bg-gray-900 border-gray-900" : "border-gray-300"}`}>
+                    <Text className={`${value ? "text-white" : "text-gray-900"}`}>Telefon teilen</Text>
+                  </Pressable>
+                )} />
               </View>
-              <TextInput placeholder="Nachricht" value={initialMessage} onChangeText={setInitialMessage} className="border border-gray-300 rounded-lg p-3 h-20 bg-white" multiline />
-              <Pressable disabled={isSubmitting} onPress={onApply} className={`bg-gray-900 py-3 rounded-lg items-center mt-2 ${isSubmitting ? "opacity-60" : ""}`}>
+              <Controller control={control} name="initialMessage" render={({ field: { onChange, onBlur, value } }) => (
+                <TextInput placeholder="Nachricht" value={value} onChangeText={onChange} onBlur={onBlur} className="border border-gray-300 rounded-lg p-3 h-20 bg-white" multiline />
+              )} />
+              <Pressable disabled={isSubmitting} onPress={handleSubmit(onApply)} className={`bg-gray-900 py-3 rounded-lg items-center mt-2 ${isSubmitting ? "opacity-60" : ""}`}>
                 <Text className="text-white font-bold">Bewerbung senden</Text>
               </Pressable>
             </View>

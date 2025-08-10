@@ -5,18 +5,47 @@ import { api } from "@SpringEin/backend/convex/_generated/api";
 import { Container } from "@/components/container";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { router } from "expo-router";
+import { useForm, Controller } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as yup from "yup";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 
 export default function NewRequest() {
   const exchangeProfiles = useQuery(api.profiles.myExchangeProfiles) ?? [];
   const create = useMutation(api.requests.createSubstitutionRequest);
   const [exchangeProfileId, setExchangeProfileId] = useState<string | null>(null);
   const AGE_GROUP_PRESETS = ["0-2", "3-5", "6-10"] as const;
-  const [ageGroups, setAgeGroups] = useState<string[]>([]);
-  const [startDate, setStartDate] = useState<Date>(new Date());
-  const [endDate, setEndDate] = useState<Date>(new Date());
-  const [timeFrom, setTimeFrom] = useState("08:00");
-  const [timeTo, setTimeTo] = useState("16:00");
-  const [notes, setNotes] = useState("");
+  type FormValues = {
+    ageGroups: string[];
+    startDate: Date;
+    endDate: Date;
+    timeFrom: string;
+    timeTo: string;
+    notes?: string;
+  };
+  const schema: yup.ObjectSchema<FormValues> = yup.object({
+    ageGroups: yup.array(yup.string().required()).min(1, "Mindestens eine Altersgruppe wählen").required(),
+    startDate: yup.date().required(),
+    endDate: yup.date().min(yup.ref('startDate'), 'Ende nach Start').required(),
+    timeFrom: yup.string().matches(/^\d{2}:\d{2}$/g, "Format HH:MM").required(),
+    timeTo: yup.string().matches(/^\d{2}:\d{2}$/g, "Format HH:MM").required(),
+    notes: yup.string().optional(),
+  }).test('time-order', 'Von muss vor Bis liegen', (values) => {
+    if (!values) return false;
+    const toMinutes = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+    return toMinutes(values.timeFrom) < toMinutes(values.timeTo);
+  });
+  const { control, handleSubmit, setValue, getValues, formState: { errors } } = useForm<FormValues>({
+    resolver: yupResolver(schema),
+    defaultValues: {
+      ageGroups: [],
+      startDate: new Date(),
+      endDate: new Date(),
+      timeFrom: "08:00",
+      timeTo: "16:00",
+      notes: "",
+    }
+  });
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [showFromTimePicker, setShowFromTimePicker] = useState(false);
@@ -29,27 +58,22 @@ export default function NewRequest() {
     }
   }, [exchangeProfiles]);
 
-  const onSubmit = async () => {
+  const onSubmit = async (values: FormValues) => {
     try {
       if (!exchangeProfileId) return Alert.alert("Fehler", "Bitte ein Profil auswählen.");
-      if (!startDate || !endDate) return Alert.alert("Fehler", "Start- und Enddatum sind erforderlich.");
-      if (ageGroups.length === 0) return Alert.alert("Fehler", "Bitte mindestens eine Altersgruppe auswählen.");
-      if (endDate < startDate) return Alert.alert("Fehler", "Enddatum darf nicht vor dem Startdatum liegen.");
-      if (!isValidTime(timeFrom) || !isValidTime(timeTo)) return Alert.alert("Fehler", "Bitte gültige Zeiten (HH:MM) angeben.");
-      if (timeFrom >= timeTo) return Alert.alert("Fehler", "Die Zeit 'Von' muss vor 'Bis' liegen.");
 
       setIsSubmitting(true);
       await create({
         exchangeProfileId: exchangeProfileId as any,
-        ageGroups,
-        startDate: formatDate(startDate),
-        endDate: formatDate(endDate),
-        timeFrom,
-        timeTo,
-        notes,
+        ageGroups: values.ageGroups,
+        startDate: formatDate(values.startDate),
+        endDate: formatDate(values.endDate),
+        timeFrom: values.timeFrom,
+        timeTo: values.timeTo,
+        notes: values.notes,
       });
       Alert.alert("Erfolgreich", "Anfrage erstellt");
-      router.replace("/(exchange)/requests");
+      router.replace("/(exchange)/(tabs)/requests");
     } catch (e) {
       Alert.alert("Fehler", String(e));
     }
@@ -67,11 +91,11 @@ export default function NewRequest() {
 
   const onChangeStart = (_: DateTimePickerEvent, selected?: Date) => {
     if (Platform.OS !== "ios") setShowStartPicker(false);
-    if (selected) setStartDate(selected);
+    if (selected) setValue('startDate', selected, { shouldValidate: true });
   };
   const onChangeEnd = (_: DateTimePickerEvent, selected?: Date) => {
     if (Platform.OS !== "ios") setShowEndPicker(false);
-    if (selected) setEndDate(selected);
+    if (selected) setValue('endDate', selected, { shouldValidate: true });
   };
 
   const parseTimeToDate = (t: string): Date => {
@@ -89,16 +113,16 @@ export default function NewRequest() {
 
   const onChangeFromTime = (_: DateTimePickerEvent, selected?: Date) => {
     if (Platform.OS !== "ios") setShowFromTimePicker(false);
-    if (selected) setTimeFrom(formatTime(selected));
+    if (selected) setValue('timeFrom', formatTime(selected), { shouldValidate: true });
   };
   const onChangeToTime = (_: DateTimePickerEvent, selected?: Date) => {
     if (Platform.OS !== "ios") setShowToTimePicker(false);
-    if (selected) setTimeTo(formatTime(selected));
+    if (selected) setValue('timeTo', formatTime(selected), { shouldValidate: true });
   };
 
   return (
     <Container>
-      <ScrollView>
+      <KeyboardAwareScrollView keyboardShouldPersistTaps="handled">
         <View className="p-4">
           <Text className="text-2xl font-bold mb-3">Vertretung anfragen</Text>
           <Text className="mb-2">Kindertagesstätte-Profil auswählen</Text>
@@ -114,49 +138,59 @@ export default function NewRequest() {
             ))}
           </View>
           <Text className="font-semibold mb-2">Altersgruppen</Text>
-          <View className="flex-row flex-wrap gap-2 mb-3">
-            {AGE_GROUP_PRESETS.map((g) => (
-              <Pressable key={g} onPress={() => setAgeGroups((prev) => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g])} className={`px-3 py-2 rounded-full border ${ageGroups.includes(g) ? "bg-gray-900 border-gray-900" : "border-gray-300"}`}>
-                <Text className={`${ageGroups.includes(g) ? "text-white" : "text-gray-900"}`}>{g}</Text>
-              </Pressable>
-            ))}
+          <View className="flex-row flex-wrap gap-2 mb-1">
+            {AGE_GROUP_PRESETS.map((g) => {
+              const active = (getValues('ageGroups') || []).includes(g);
+              return (
+                <Pressable key={g} onPress={() => {
+                  const now = getValues('ageGroups') || [];
+                  const next = now.includes(g) ? now.filter((x) => x !== g) : [...now, g];
+                  setValue('ageGroups', next, { shouldValidate: true });
+                }} className={`px-3 py-2 rounded-full border ${active ? "bg-gray-900 border-gray-900" : "border-gray-300"}`}>
+                  <Text className={`${active ? "text-white" : "text-gray-900"}`}>{g}</Text>
+                </Pressable>
+              );
+            })}
           </View>
+          {errors.ageGroups && <Text className="text-red-500 text-xs mb-2">{errors.ageGroups.message as string}</Text>}
           <Text className="font-semibold mb-2">Zeitraum</Text>
           <View className="flex-row gap-3 mb-3">
             <Pressable onPress={() => setShowStartPicker(true)} className="border border-gray-300 rounded-lg p-3 flex-1 justify-center">
-              <Text>Start: {formatDate(startDate)}</Text>
+              <Text>Start: {formatDate(getValues('startDate'))}</Text>
             </Pressable>
             <Pressable onPress={() => setShowEndPicker(true)} className="border border-gray-300 rounded-lg p-3 flex-1 justify-center">
-              <Text>Ende: {formatDate(endDate)}</Text>
+              <Text>Ende: {formatDate(getValues('endDate'))}</Text>
             </Pressable>
           </View>
         {showStartPicker && (
-          <DateTimePicker value={startDate} mode="date" display={Platform.OS === "ios" ? "spinner" : "default"} onChange={onChangeStart} />
+          <DateTimePicker value={getValues('startDate')} mode="date" display={Platform.OS === "ios" ? "spinner" : "default"} onChange={onChangeStart} />
         )}
         {showEndPicker && (
-          <DateTimePicker value={endDate} mode="date" display={Platform.OS === "ios" ? "spinner" : "default"} onChange={onChangeEnd} />
+          <DateTimePicker value={getValues('endDate')} mode="date" display={Platform.OS === "ios" ? "spinner" : "default"} onChange={onChangeEnd} />
         )}
           <Text className="font-semibold mb-2">Uhrzeit</Text>
           <View className="flex-row gap-3 mb-3">
             <Pressable onPress={() => setShowFromTimePicker(true)} className="border border-gray-300 rounded-lg p-3 flex-1 justify-center">
-              <Text>Von: {timeFrom}</Text>
+              <Text>Von: {getValues('timeFrom')}</Text>
             </Pressable>
             <Pressable onPress={() => setShowToTimePicker(true)} className="border border-gray-300 rounded-lg p-3 flex-1 justify-center">
-              <Text>Bis: {timeTo}</Text>
+              <Text>Bis: {getValues('timeTo')}</Text>
             </Pressable>
           </View>
         {showFromTimePicker && (
-          <DateTimePicker value={parseTimeToDate(timeFrom)} mode="time" display={Platform.OS === "ios" ? "spinner" : "default"} onChange={onChangeFromTime} />
+          <DateTimePicker value={parseTimeToDate(getValues('timeFrom'))} mode="time" display={Platform.OS === "ios" ? "spinner" : "default"} onChange={onChangeFromTime} />
         )}
         {showToTimePicker && (
-          <DateTimePicker value={parseTimeToDate(timeTo)} mode="time" display={Platform.OS === "ios" ? "spinner" : "default"} onChange={onChangeToTime} />
+          <DateTimePicker value={parseTimeToDate(getValues('timeTo'))} mode="time" display={Platform.OS === "ios" ? "spinner" : "default"} onChange={onChangeToTime} />
         )}
-          <TextInput placeholder="Notizen" value={notes} onChangeText={setNotes} className="border border-gray-300 rounded-lg p-3 h-24" multiline />
-          <Pressable disabled={isSubmitting} onPress={onSubmit} className={`bg-gray-900 py-3 rounded-lg items-center mt-2 ${isSubmitting ? "opacity-60" : ""}`}>
+          <Controller control={control} name="notes" render={({ field: { onChange, onBlur, value } }) => (
+            <TextInput placeholder="Notizen" value={value} onChangeText={onChange} onBlur={onBlur} className="border border-gray-300 rounded-lg p-3 h-24" multiline />
+          )} />
+          <Pressable disabled={isSubmitting} onPress={handleSubmit(onSubmit)} className={`bg-gray-900 py-3 rounded-lg items-center mt-2 ${isSubmitting ? "opacity-60" : ""}`}>
             <Text className="text-white font-bold">Senden</Text>
           </Pressable>
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </Container>
   );
 }

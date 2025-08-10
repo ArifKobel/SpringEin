@@ -4,7 +4,7 @@ import { Link } from "expo-router";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { Ionicons } from "@expo/vector-icons";
 
-export default function ExchangeSettings() {
+export default function ProviderSettings() {
   const { signOut } = useAuthActions();
   return (
     <Container>
@@ -12,13 +12,22 @@ export default function ExchangeSettings() {
         <Text className="text-2xl font-extrabold mb-4">Einstellungen</Text>
 
         <Text className="text-sm font-bold text-gray-900 mb-2">Profil</Text>
-        <Link href="/(exchange)/settings/profile" asChild>
+        <Link href="/(provider)/profile/edit" asChild>
           <Pressable className="flex-row items-center justify-between bg-white rounded-xl p-4 mb-4 border border-gray-200 active:opacity-80">
             <View className="flex-row items-center">
               <Ionicons name="person-circle-outline" size={20} color="#111827" />
               <Text className="ml-3 font-semibold text-gray-900">Profil bearbeiten</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
+          </Pressable>
+        </Link>
+
+        <Link href="/hub" asChild>
+          <Pressable className="flex-row items-center justify-between bg-white rounded-xl p-4 mb-4 border border-gray-200 active:opacity-80">
+            <View className="flex-row items-center">
+              <Ionicons name="person-circle-outline" size={20} color="#111827" />
+              <Text className="ml-3 font-semibold text-gray-900">Profil wechseln</Text>
+            </View>
           </Pressable>
         </Link>
 

@@ -11,7 +11,7 @@ export default function ProviderHome() {
         <Text className="text-gray-500 mb-4">Verwalte dein Tagespflegeperson-Profil und sieh eingehende Anfragen.</Text>
 
         <View className="mt-2">
-          <Link href="/(provider)/inbox" asChild>
+          <Link href="/(provider)/(tabs)/inbox" asChild>
             <Pressable className="flex-row items-center justify-between bg-white rounded-xl p-4 mb-3 border border-gray-200 active:opacity-80">
               <View className="flex-row items-center">
                 <Ionicons name="mail-outline" size={20} color="#111827" />

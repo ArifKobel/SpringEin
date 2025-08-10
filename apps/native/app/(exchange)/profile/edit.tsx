@@ -4,6 +4,9 @@ import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/dat
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@SpringEin/backend/convex/_generated/api";
 import { Container } from "@/components/container";
+import { useForm, Controller } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as yup from "yup";
 
 export default function EditExchange() {
   const settings = useQuery(api.profiles.mySettings);
@@ -12,39 +15,73 @@ export default function EditExchange() {
   const update = useMutation(api.profiles.updateExchangeProfile);
   const profile = myExchanges.find((p) => p._id === currentId);
 
-  const [facilityName, setFacilityName] = useState("");
-  const [address, setAddress] = useState("");
-  const [city, setCity] = useState("");
-  const [postalCode, setPostalCode] = useState("");
-  const [contactPersonName, setContactPersonName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
-  // removed share toggles from profile
-  const [ageGroups, setAgeGroups] = useState<string[]>([]);
-  const [openingDays, setOpeningDays] = useState<string[]>([]);
-  const [openingTimeFrom, setOpeningTimeFrom] = useState("08:00");
-  const [openingTimeTo, setOpeningTimeTo] = useState("16:00");
+  type FormValues = {
+    facilityName: string;
+    address: string;
+    city: string;
+    postalCode?: string;
+    contactPersonName?: string;
+    phone?: string;
+    email?: string;
+    ageGroups: string[];
+    openingDays: string[];
+    openingTimeFrom: string;
+    openingTimeTo: string;
+    bio?: string;
+  };
+  const schema: yup.ObjectSchema<FormValues> = yup.object({
+    facilityName: yup.string().required("Einrichtungsname ist erforderlich"),
+    address: yup.string().required("Adresse ist erforderlich"),
+    city: yup.string().required("Stadt ist erforderlich"),
+    postalCode: yup.string().optional(),
+    contactPersonName: yup.string().optional(),
+    phone: yup.string().optional(),
+    email: yup.string().email("Ungültige E-Mail").optional(),
+    ageGroups: yup.array(yup.string().required()).min(1, "Mindestens eine Altersgruppe wählen").required(),
+    openingDays: yup.array(yup.string().required()).min(1, "Mindestens ein Öffnungstag").required(),
+    openingTimeFrom: yup.string().matches(/^\d{2}:\d{2}$/g, "Format HH:MM").required(),
+    openingTimeTo: yup.string().matches(/^\d{2}:\d{2}$/g, "Format HH:MM").required(),
+    bio: yup.string().optional(),
+  });
+  const { control, handleSubmit, setValue, getValues, reset, formState: { errors } } = useForm<FormValues>({
+    resolver: yupResolver(schema),
+    defaultValues: {
+      facilityName: "",
+      address: "",
+      city: "",
+      postalCode: "",
+      contactPersonName: "",
+      phone: "",
+      email: "",
+      ageGroups: [],
+      openingDays: [],
+      openingTimeFrom: "08:00",
+      openingTimeTo: "16:00",
+      bio: "",
+    },
+  });
   const [openingHours, setOpeningHours] = useState<{ day: string; from: string; to: string }[]>([]);
-  const [bio, setBio] = useState("");
   const [showStdFrom, setShowStdFrom] = useState(false);
   const [showStdTo, setShowStdTo] = useState(false);
   const [openDayPicker, setOpenDayPicker] = useState<{ day: string | null; which: "from" | "to" | null }>({ day: null, which: null });
 
   useEffect(() => {
     if (profile) {
-      setFacilityName(profile.facilityName ?? "");
-      setAddress(profile.address ?? "");
-      setCity(profile.city);
-      setPostalCode(profile.postalCode ?? "");
-      setContactPersonName(profile.contactPersonName ?? "");
-      setPhone(profile.phone ?? "");
-      setEmail((profile as any).email ?? "");
-      setAgeGroups(profile.ageGroups ?? []);
-      setOpeningDays(profile.openingDays ?? []);
-      setOpeningTimeFrom(profile.openingTimeFrom ?? "08:00");
-      setOpeningTimeTo(profile.openingTimeTo ?? "16:00");
+      reset({
+        facilityName: profile.facilityName ?? "",
+        address: profile.address ?? "",
+        city: profile.city,
+        postalCode: profile.postalCode ?? "",
+        contactPersonName: profile.contactPersonName ?? "",
+        phone: profile.phone ?? "",
+        email: (profile as any).email ?? "",
+        ageGroups: profile.ageGroups ?? [],
+        openingDays: profile.openingDays ?? [],
+        openingTimeFrom: profile.openingTimeFrom ?? "08:00",
+        openingTimeTo: profile.openingTimeTo ?? "16:00",
+        bio: profile.bio ?? "",
+      });
       setOpeningHours(profile.openingHours ?? []);
-      setBio(profile.bio ?? "");
     }
   }, [profile]);
 
@@ -60,11 +97,11 @@ export default function EditExchange() {
   const formatTime = (d: Date) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
   const onChangeStdFrom = (_: DateTimePickerEvent, selected?: Date) => {
     if (Platform.OS !== "ios") setShowStdFrom(false);
-    if (selected) setOpeningTimeFrom(formatTime(selected));
+    if (selected) setValue("openingTimeFrom", formatTime(selected), { shouldValidate: true });
   };
   const onChangeStdTo = (_: DateTimePickerEvent, selected?: Date) => {
     if (Platform.OS !== "ios") setShowStdTo(false);
-    if (selected) setOpeningTimeTo(formatTime(selected));
+    if (selected) setValue("openingTimeTo", formatTime(selected), { shouldValidate: true });
   };
   const onChangeDayTime = (_: DateTimePickerEvent, selected?: Date) => {
     if (Platform.OS !== "ios") setOpenDayPicker({ day: null, which: null });
@@ -78,35 +115,34 @@ export default function EditExchange() {
     });
   };
   const applyStandardToDays = () => {
+    const selectedDays = getValues("openingDays");
+    const from = getValues("openingTimeFrom");
+    const to = getValues("openingTimeTo");
     setOpeningHours((prev) => {
-      const others = prev.filter((x) => !openingDays.includes(x.day));
-      const add = openingDays.map((d) => ({ day: d, from: openingTimeFrom, to: openingTimeTo }));
+      const others = prev.filter((x) => !selectedDays.includes(x.day));
+      const add = selectedDays.map((d) => ({ day: d, from, to }));
       return [...others, ...add];
     });
   };
 
-  const onSubmit = async () => {
+  const onSubmit = async (values: FormValues) => {
     try {
       if (!profile) return;
-      if (!facilityName || !address || !city) {
-        Alert.alert("Fehler", "Name der Einrichtung, Adresse und Stadt sind erforderlich");
-        return;
-      }
        await update({
         profileId: profile._id as any,
-        facilityName,
-        address,
-        city,
-        postalCode,
-        contactPersonName,
-         phone,
-         email,
-        ageGroups,
-        openingDays,
-        openingTimeFrom,
-        openingTimeTo,
+        facilityName: values.facilityName,
+        address: values.address,
+        city: values.city,
+        postalCode: values.postalCode,
+        contactPersonName: values.contactPersonName,
+        phone: values.phone,
+        email: values.email,
+        ageGroups: values.ageGroups,
+        openingDays: values.openingDays,
+        openingTimeFrom: values.openingTimeFrom,
+        openingTimeTo: values.openingTimeTo,
         openingHours,
-        bio,
+        bio: values.bio,
       });
       Alert.alert("Gespeichert", "Profil aktualisiert");
     } catch (e) {
@@ -125,62 +161,101 @@ export default function EditExchange() {
           ) : (
             <>
               <Text className="text-sm font-semibold mb-1">Einrichtungsname</Text>
-              <TextInput placeholder="Einrichtungsname" value={facilityName} onChangeText={setFacilityName} className="border border-gray-300 rounded-lg p-3 mb-3" />
+              <Controller control={control} name="facilityName" render={({ field: { onChange, onBlur, value } }) => (
+                <TextInput placeholder="Einrichtungsname" value={value} onChangeText={onChange} onBlur={onBlur} className={`border rounded-lg p-3 mb-1 ${errors.facilityName ? "border-red-400" : "border-gray-300"}`} />
+              )} />
+              {errors.facilityName && <Text className="text-red-500 text-xs mb-2">{errors.facilityName.message}</Text>}
 
               <Text className="text-sm font-semibold mb-1">Adresse</Text>
-              <TextInput placeholder="Adresse" value={address} onChangeText={setAddress} className="border border-gray-300 rounded-lg p-3 mb-3" />
+              <Controller control={control} name="address" render={({ field: { onChange, onBlur, value } }) => (
+                <TextInput placeholder="Adresse" value={value} onChangeText={onChange} onBlur={onBlur} className={`border rounded-lg p-3 mb-1 ${errors.address ? "border-red-400" : "border-gray-300"}`} />
+              )} />
+              {errors.address && <Text className="text-red-500 text-xs mb-2">{errors.address.message}</Text>}
               <View className="flex-row gap-3">
                 <View className="flex-1">
                   <Text className="text-sm font-semibold mb-1">Stadt</Text>
-                  <TextInput placeholder="Stadt" value={city} onChangeText={setCity} className="border border-gray-300 rounded-lg p-3 mb-3" />
+                  <Controller control={control} name="city" render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput placeholder="Stadt" value={value} onChangeText={onChange} onBlur={onBlur} className={`border rounded-lg p-3 mb-1 ${errors.city ? "border-red-400" : "border-gray-300"}`} />
+                  )} />
+                  {errors.city && <Text className="text-red-500 text-xs mb-2">{errors.city.message}</Text>}
                 </View>
                 <View className="flex-1">
                   <Text className="text-sm font-semibold mb-1">PLZ</Text>
-                  <TextInput placeholder="PLZ" value={postalCode} onChangeText={setPostalCode} className="border border-gray-300 rounded-lg p-3 mb-3" />
+                  <Controller control={control} name="postalCode" render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput placeholder="PLZ" value={value} onChangeText={onChange} onBlur={onBlur} className="border border-gray-300 rounded-lg p-3 mb-3" />
+                  )} />
                 </View>
               </View>
 
               <Text className="text-sm font-semibold mb-1">Ansprechpartner</Text>
-              <TextInput placeholder="Ansprechpartner" value={contactPersonName} onChangeText={setContactPersonName} className="border border-gray-300 rounded-lg p-3 mb-3" />
+              <Controller control={control} name="contactPersonName" render={({ field: { onChange, onBlur, value } }) => (
+                <TextInput placeholder="Ansprechpartner" value={value} onChangeText={onChange} onBlur={onBlur} className="border border-gray-300 rounded-lg p-3 mb-3" />
+              )} />
 
               <Text className="text-sm font-semibold mb-1">Telefon</Text>
-              <TextInput placeholder="Telefon" value={phone} onChangeText={setPhone} className="border border-gray-300 rounded-lg p-3 mb-3" keyboardType="phone-pad" />
+              <Controller control={control} name="phone" render={({ field: { onChange, onBlur, value } }) => (
+                <TextInput placeholder="Telefon" value={value} onChangeText={onChange} onBlur={onBlur} className="border border-gray-300 rounded-lg p-3 mb-3" keyboardType="phone-pad" />
+              )} />
 
               <Text className="text-sm font-semibold mb-1">E-Mail</Text>
-              <TextInput placeholder="E-Mail" value={email} onChangeText={setEmail} className="border border-gray-300 rounded-lg p-3 mb-3" keyboardType="email-address" autoCapitalize="none" />
+              <Controller control={control} name="email" render={({ field: { onChange, onBlur, value } }) => (
+                <TextInput placeholder="E-Mail" value={value} onChangeText={onChange} onBlur={onBlur} className={`border rounded-lg p-3 mb-1 ${errors.email ? "border-red-400" : "border-gray-300"}`} keyboardType="email-address" autoCapitalize="none" />
+              )} />
+              {errors.email && <Text className="text-red-500 text-xs mb-2">{errors.email.message}</Text>}
 
               <Text className="text-sm font-semibold mt-2 mb-2">Altersgruppen</Text>
               <View className="flex-row flex-wrap gap-2 mb-3">
-                {(["0-2", "3-5", "6-10"] as const).map((g) => (
-                  <Pressable key={g} onPress={() => setAgeGroups((prev) => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g])} className={`px-3 py-2 rounded-full border ${ageGroups.includes(g) ? "bg-gray-900 border-gray-900" : "border-gray-300"}`}>
-                    <Text className={`${ageGroups.includes(g) ? "text-white" : "text-gray-900"}`}>{g}</Text>
-                  </Pressable>
-                ))}
+                {(["0-2", "3-5", "6-10"] as const).map((g) => {
+                  const list = getValues("ageGroups");
+                  const active = list.includes(g);
+                  return (
+                    <Pressable key={g} onPress={() => {
+                      const now = getValues("ageGroups");
+                      const next = now.includes(g) ? now.filter((x) => x !== g) : [...now, g];
+                      setValue("ageGroups", next, { shouldValidate: true });
+                    }} className={`px-3 py-2 rounded-full border ${active ? "bg-gray-900 border-gray-900" : "border-gray-300"}`}>
+                      <Text className={`${active ? "text-white" : "text-gray-900"}`}>{g}</Text>
+                    </Pressable>
+                  );
+                })}
               </View>
+              {errors.ageGroups && <Text className="text-red-500 text-xs mb-2">{errors.ageGroups.message as string}</Text>}
 
               <Text className="text-sm font-semibold mb-2">Öffnungstage</Text>
               <View className="flex-row flex-wrap gap-2 mb-3">
-                {(["Mon", "Tue", "Wed", "Thu", "Fri"] as const).map((d) => (
-                  <Pressable key={d} onPress={() => setOpeningDays((prev) => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d])} className={`px-3 py-2 rounded-full border ${openingDays.includes(d) ? "bg-gray-900 border-gray-900" : "border-gray-300"}`}>
-                    <Text className={`${openingDays.includes(d) ? "text-white" : "text-gray-900"}`}>{d}</Text>
-                  </Pressable>
-                ))}
+                {(["Mon", "Tue", "Wed", "Thu", "Fri"] as const).map((d) => {
+                  const list = getValues("openingDays");
+                  const active = list.includes(d);
+                  return (
+                    <Pressable key={d} onPress={() => {
+                      const now = getValues("openingDays");
+                      const next = now.includes(d) ? now.filter((x) => x !== d) : [...now, d];
+                      setValue("openingDays", next, { shouldValidate: true });
+                    }} className={`px-3 py-2 rounded-full border ${active ? "bg-gray-900 border-gray-900" : "border-gray-300"}`}>
+                      <Text className={`${active ? "text-white" : "text-gray-900"}`}>{d}</Text>
+                    </Pressable>
+                  );
+                })}
               </View>
+              {errors.openingDays && <Text className="text-red-500 text-xs mb-2">{errors.openingDays.message as string}</Text>}
 
               <Text className="text-sm font-semibold mb-2">Öffnungszeiten (Standard)</Text>
               <View className="flex-row gap-3 mb-2">
                 <Pressable onPress={() => setShowStdFrom(true)} className="border border-gray-300 rounded-lg p-3 flex-1 justify-center">
-                  <Text>Öffnet: {openingTimeFrom}</Text>
+                  <Text>Öffnet: {getValues("openingTimeFrom")}</Text>
                 </Pressable>
                 <Pressable onPress={() => setShowStdTo(true)} className="border border-gray-300 rounded-lg p-3 flex-1 justify-center">
-                  <Text>Schließt: {openingTimeTo}</Text>
+                  <Text>Schließt: {getValues("openingTimeTo")}</Text>
                 </Pressable>
               </View>
+              {(errors.openingTimeFrom || errors.openingTimeTo) && (
+                <Text className="text-red-500 text-xs mb-2">{errors.openingTimeFrom?.message || errors.openingTimeTo?.message}</Text>
+              )}
               {showStdFrom && (
-                <DateTimePicker value={parseTimeToDate(openingTimeFrom)} mode="time" display={Platform.OS === "ios" ? "spinner" : "default"} onChange={onChangeStdFrom} />
+                <DateTimePicker value={parseTimeToDate(getValues("openingTimeFrom"))} mode="time" display={Platform.OS === "ios" ? "spinner" : "default"} onChange={onChangeStdFrom} />
               )}
               {showStdTo && (
-                <DateTimePicker value={parseTimeToDate(openingTimeTo)} mode="time" display={Platform.OS === "ios" ? "spinner" : "default"} onChange={onChangeStdTo} />
+                <DateTimePicker value={parseTimeToDate(getValues("openingTimeTo"))} mode="time" display={Platform.OS === "ios" ? "spinner" : "default"} onChange={onChangeStdTo} />
               )}
               <Pressable onPress={applyStandardToDays} className="self-start bg-gray-200 px-3 py-2 rounded-lg mt-1">
                 <Text className="text-gray-900 font-semibold">Standard auf Wochentage anwenden</Text>
@@ -204,7 +279,7 @@ export default function EditExchange() {
               {openDayPicker.day && openDayPicker.which && (
                 <DateTimePicker
                   value={parseTimeToDate(
-                    (openingHours.find((x) => x.day === openDayPicker.day)?.[openDayPicker.which!]) || openingTimeFrom
+                    (openingHours.find((x) => x.day === openDayPicker.day)?.[openDayPicker.which!]) || getValues("openingTimeFrom")
                   )}
                   mode="time"
                   display={Platform.OS === "ios" ? "spinner" : "default"}
@@ -213,9 +288,11 @@ export default function EditExchange() {
               )}
 
               <Text className="text-sm font-semibold mb-1 mt-2">Kurzbeschreibung / Bio</Text>
-              <TextInput placeholder="Kurzbeschreibung / Bio" value={bio} onChangeText={setBio} className="border border-gray-300 rounded-lg p-3 h-24" multiline />
+              <Controller control={control} name="bio" render={({ field: { onChange, onBlur, value } }) => (
+                <TextInput placeholder="Kurzbeschreibung / Bio" value={value} onChangeText={onChange} onBlur={onBlur} className="border border-gray-300 rounded-lg p-3 h-24" multiline />
+              )} />
 
-              <Pressable onPress={onSubmit} className="bg-gray-900 py-3 rounded-lg items-center mt-3">
+              <Pressable onPress={handleSubmit(onSubmit)} className="bg-gray-900 py-3 rounded-lg items-center mt-3">
                 <Text className="text-white font-bold">Speichern</Text>
               </Pressable>
             </>

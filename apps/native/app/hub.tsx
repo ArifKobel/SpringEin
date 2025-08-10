@@ -13,7 +13,7 @@ export default function Hub() {
 
   const activateProvider = async (id?: string) => {
     await setActive({ role: "provider", providerProfileId: id as any });
-    router.replace("/(provider)/home");
+    router.replace("/(provider)/(tabs)/home");
   };
   const activateExchange = async (id?: string) => {
     await setActive({ role: "exchange", exchangeProfileId: id as any });
